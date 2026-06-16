@@ -285,7 +285,24 @@
   input.qb-input{display:block;width:100%;background:var(--input-bg);color:var(--text);border:1px solid var(--input-border);border-radius:10px;font-size:0.85rem;font-family:inherit;margin-bottom:6px;}
   html[data-theme="light"] input.qb-input{background:#fff;color:#222;border-color:#ccc;}
 
-  /* ===== PERFORMANCE CHART ===== */
+  /* ===== LEADERBOARD TAB BUTTONS ===== */
+  .lb-tab-btn{background:rgba(255,215,0,0.08);border:1px solid #444;color:#888;border-radius:20px;padding:7px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:0.2s;flex-shrink:0;}
+  .lb-tab-btn.active{background:var(--gold);border-color:var(--gold);color:#000;}
+  .lb-entry{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #1a1a2e;}
+  .lb-entry:last-child{border-bottom:none;}
+  .lb-entry.me{background:rgba(255,215,0,0.06);}
+  .lb-rank{font-size:1.3rem;min-width:34px;text-align:center;}
+  .lb-info{flex:1;min-width:0;}
+  .lb-name{font-weight:700;font-size:0.88rem;}
+  .lb-meta{font-size:0.68rem;color:#888;margin-top:2px;}
+  .lb-score{font-size:1.2rem;font-weight:900;}
+  .lb-bar-wrap{height:4px;background:#333;border-radius:2px;margin-top:4px;}
+  .lb-bar-fill{height:100%;border-radius:2px;transition:width 0.6s;}
+
+  /* ===== CLOUD STATUS ===== */
+  .cloud-online{background:#28a745!important;}
+  .cloud-offline{background:#dc3545!important;}
+  .cloud-checking{background:#ffc107!important;}
   .perf-chart-wrap{background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #333;}
   .perf-chart-title{color:var(--gold);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;text-align:center;}
   .perf-chart-svg{width:100%;overflow:visible;}
@@ -376,14 +393,25 @@
     </div>
   </div>
 
+  <!-- Cloud Status Indicator -->
+  <div id="cloudStatus" style="display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.3);border:1px solid #333;border-radius:20px;padding:5px 14px;margin-bottom:14px;font-size:0.72rem;">
+    <span id="cloudDot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;"></span>
+    <span id="cloudText" style="color:#888;">Checking connection...</span>
+  </div>
+
   <div class="topnav-row">
     <button class="topnav-btn" onclick="showHistory()">📊 History</button>
     <button class="topnav-btn" onclick="showTopicBank()">📂 Tracker</button>
-    <button class="topnav-btn" onclick="showQBank()">🧪 Question Bank</button>
     <button class="topnav-btn" onclick="showLeaderboard()">🏆 Leaderboard</button>
     <button class="topnav-btn" onclick="showDailyChallenge()">⚡ Daily Challenge</button>
     <button class="topnav-btn" id="adminBtn" style="display:none;border-color:#ff6b6b;color:#ff6b6b;" onclick="showAdmin()">🔐 Admin Panel</button>
     <button class="topnav-btn" style="border-color:#888;color:#888;" onclick="doLogout()">🚪 Logout</button>
+  </div>
+
+  <!-- Cloud status indicator -->
+  <div id="cloudStatus" style="margin-top:8px;font-size:0.7rem;display:flex;align-items:center;gap:6px;justify-content:center;">
+    <span id="cloudDot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;"></span>
+    <span id="cloudText" style="color:#666;">Checking connection...</span>
   </div>
 </div>
 <div id="streamSelect" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:30px 20px;background:var(--dark);">
@@ -559,12 +587,21 @@ Ans: B"></textarea>
 <!-- LEADERBOARD SCREEN -->
 <div id="leaderboardScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);padding:0;">
   <div class="qb-header"><button class="back-btn" onclick="showSplash()">← Back</button><h2>🏆 Leaderboard</h2></div>
-  <div style="padding:16px;max-width:680px;width:100%;margin:0 auto;">
-    <div class="topic-tabs" style="margin-bottom:16px;" id="lbTabs">
-      <div class="topic-tab active" onclick="setLbTab('today')">Today</div>
-      <div class="topic-tab" onclick="setLbTab('week')">This Week</div>
-      <div class="topic-tab" onclick="setLbTab('alltime')">All Time</div>
-      <div class="topic-tab" onclick="setLbTab('avg')">Average</div>
+  <div style="padding:12px 16px;max-width:680px;width:100%;margin:0 auto;">
+    <div style="overflow-x:auto;display:flex;gap:6px;margin-bottom:14px;padding-bottom:4px;" id="lbTabs">
+      <button class="lb-tab-btn active" onclick="setLbTab('today')">🌅 Today</button>
+      <button class="lb-tab-btn" onclick="setLbTab('week')">📅 This Week</button>
+      <button class="lb-tab-btn" onclick="setLbTab('alltime')">🏆 All Time</button>
+      <button class="lb-tab-btn" onclick="setLbTab('avg')">📊 Average</button>
+      <button class="lb-tab-btn" onclick="setLbTab('daily')">⚡ Daily Challenge</button>
+      <button class="lb-tab-btn" onclick="setLbTab('dailymock')">🎯 Daily Mock</button>
+      <button class="lb-tab-btn" onclick="setLbTab('weeklymock')">📅 Weekly Mock</button>
+      <button class="lb-tab-btn" onclick="setLbTab('rsu')">🏛️ RSU Post UTME</button>
+      <button class="lb-tab-btn" onclick="setLbTab('utmedaily')">🎓 Post UTME Daily</button>
+      <button class="lb-tab-btn" onclick="setLbTab('practice')">📚 Practice Mode</button>
+      <button class="lb-tab-btn" onclick="setLbTab('jamb')">📝 JAMB</button>
+      <button class="lb-tab-btn" onclick="setLbTab('jambweekly')">📝 JAMB Weekly</button>
+      <button class="lb-tab-btn" onclick="setLbTab('archive')">🗂️ Past Records</button>
     </div>
     <div id="leaderboardBody"></div>
   </div>
@@ -720,6 +757,7 @@ Ans: B"></textarea>
     <div class="admin-tab active" onclick="setAdminTab('overview')">📊 Overview</div>
     <div class="admin-tab" onclick="setAdminTab('users')">👥 Users</div>
     <div class="admin-tab" onclick="setAdminTab('addq')">➕ Add Question</div>
+    <div class="admin-tab" onclick="setAdminTab('bulkq')">📋 Bulk Parser</div>
     <div class="admin-tab" onclick="setAdminTab('questions')">📋 All Questions</div>
     <div class="admin-tab" onclick="setAdminTab('attempts')">📈 Attempts</div>
   </div>
@@ -2551,7 +2589,7 @@ function showReview(){hideAll();document.getElementById('reviewScreen').style.di
 function showHistory(){hideAll();document.getElementById('historyScreen').style.display='flex';renderHistory();updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showAttemptDetail(idx){hideAll();document.getElementById('attemptDetailScreen').style.display='flex';renderAttemptDetail(idx);updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showTopicBank(){hideAll();document.getElementById('topicBankScreen').style.display='flex';renderTopicBank();updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showQBank(){hideAll();document.getElementById('qbankScreen').style.display='flex';populateQbSubjects();updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showQBank(){if(!currentUser||!currentUser.is_admin){alert('⛔ Question Bank is only accessible to the admin.');return;}hideAll();document.getElementById('qbankScreen').style.display='flex';populateQbSubjects();updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showLeaderboard(){hideAll();document.getElementById('leaderboardScreen').style.display='flex';renderLeaderboard('today');updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showDailyChallenge(){hideAll();document.getElementById('dailyChallengeScreen').style.display='flex';renderDailyChallenge();updateCalcFloatBtn();setThemeToggleVisible(true);}
 
@@ -3406,101 +3444,378 @@ function loadCustomQuestionsIntoQB(){
     QB[p.subject].push({q:p.q,opts:p.opts,ans:p.ans,explanation:p.explanation});
   });
 }
-// ===== LEADERBOARD =====
-let lbCurrentTab='today';
+// ============================================================
+// CLOUD STATUS CHECK
+// ============================================================
+async function checkCloudStatus(){
+  const dot=document.getElementById('cloudDot');
+  const txt=document.getElementById('cloudText');
+  if(!dot||!txt)return;
+  dot.className='cloud-checking';
+  txt.style.color='#ffc107';
+  txt.textContent='Connecting to cloud...';
+  try{
+    const {data,error}=await supa.from('users').select('id').limit(1);
+    if(error)throw error;
+    dot.className='cloud-online';
+    txt.style.color='#28a745';
+    txt.textContent='☁️ Cloud connected — Live data active';
+  }catch(e){
+    dot.className='cloud-offline';
+    txt.style.color='#dc3545';
+    txt.textContent='⚠️ Cloud offline — Using local data only';
+  }
+}
 
+// ============================================================
+// LEADERBOARD — FULL REBUILD
+// ============================================================
 function setLbTab(tab){
-  lbCurrentTab=tab;
-  document.querySelectorAll('#lbTabs .topic-tab').forEach((el,i)=>{
-    const tabs=['today','week','alltime','avg'];
-    el.className='topic-tab'+(tabs[i]===tab?' active':'');
+  document.querySelectorAll('.lb-tab-btn').forEach(btn=>{
+    btn.className='lb-tab-btn'+(btn.textContent.toLowerCase().includes(tab)||btn.onclick?.toString().includes("'"+tab+"'")?'  active':'');
+  });
+  // Easier: just update by matching onclick
+  document.querySelectorAll('#lbTabs .lb-tab-btn').forEach(btn=>{
+    const onc=btn.getAttribute('onclick')||'';
+    btn.className='lb-tab-btn'+(onc.includes("'"+tab+"'")?' active':'');
   });
   renderLeaderboard(tab);
 }
 
-function renderLeaderboard(tab){
-  const h=getHistory();
+async function renderLeaderboard(tab){
   const body=document.getElementById('leaderboardBody');
-  if(!h.length){
-    body.innerHTML='<div style="text-align:center;color:#888;padding:40px;">No attempts yet. Complete some exams to appear on the leaderboard!</div>';
-    return;
-  }
-
-  const now=new Date();
-  const todayStr=now.toDateString();
-  const weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay());
-
-  // Filter by period
-  let filtered=h;
-  if(tab==='today') filtered=h.filter(x=>new Date(x.date).toDateString()===todayStr);
-  else if(tab==='week') filtered=h.filter(x=>new Date(x.date)>=weekStart);
-
-  // Build entries
-  let entries=[];
-  if(tab==='avg'){
-    // Group by subject, show average per subject
-    const bySubj={};
-    h.forEach(x=>{
-      const k=x.subject||'mixed';
-      if(!bySubj[k])bySubj[k]={subject:k,scores:[],total:0,count:0};
-      bySubj[k].scores.push(x.percent);
-      bySubj[k].total+=x.percent;
-      bySubj[k].count++;
-    });
-    entries=Object.values(bySubj).map(s=>({
-      label:(subjectMeta[s.subject]||{icon:'🎯',name:s.subject}).icon+' '+(subjectMeta[s.subject]||{name:s.subject}).name,
-      score:Math.round(s.total/s.count),
-      extra:s.count+' attempt'+(s.count>1?'s':''),
-      best:Math.max(...s.scores),
-      date:null
-    })).sort((a,b)=>b.score-a.score);
-  } else {
-    entries=filtered.map(x=>{
-      const sm=subjectMeta[x.subject]||{icon:'🎯',name:x.subject||'Mixed'};
-      return {
-        label:sm.icon+' '+sm.name,
-        score:x.percent,
-        extra:x.correct+'/'+x.total+' correct',
-        date:new Date(x.date).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}),
-      };
-    }).sort((a,b)=>b.score-a.score);
-  }
-
-  if(!entries.length){
-    body.innerHTML='<div style="text-align:center;color:#888;padding:40px;">No attempts in this period yet.</div>';
-    return;
-  }
+  if(!body)return;
+  body.innerHTML='<div style="text-align:center;padding:30px;color:#888;"><div style="font-size:2rem;margin-bottom:8px;">⏳</div>Loading live rankings...</div>';
 
   const medals=['🥇','🥈','🥉'];
-  const tabLabels={today:"Today's",week:"This Week's",alltime:'All-Time',avg:'Subject Average'};
-  let html='<div style="text-align:center;color:var(--gold);font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">'+tabLabels[tab]+' Rankings</div>';
-  html+='<div style="background:var(--card);border-radius:14px;overflow:hidden;border:1px solid #333;">';
 
-  entries.forEach((e,i)=>{
-    const col=e.score>=70?'#FFD700':e.score>=50?'#ffc107':'#dc3545';
-    const medal=medals[i]||('<span style="color:#888;font-size:0.8rem;">#'+(i+1)+'</span>');
-    html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #222;">'
-      +'<div style="font-size:1.4rem;min-width:32px;text-align:center;">'+medal+'</div>'
-      +'<div style="flex:1;min-width:0;">'
-        +'<div style="font-weight:700;font-size:0.9rem;">'+e.label+'</div>'
-        +'<div style="font-size:0.7rem;color:#888;">'+e.extra+(e.date?' · '+e.date:'')+'</div>'
-        +'<div style="height:6px;background:#333;border-radius:3px;margin-top:6px;"><div style="height:100%;width:'+e.score+'%;background:'+col+';border-radius:3px;"></div></div>'
-      +'</div>'
-      +'<div style="font-size:1.3rem;font-weight:900;color:'+col+';">'+e.score+'%</div>'
-    +'</div>';
+  function buildTable(entries, scoreLabel){
+    if(!entries||!entries.length){
+      return '<div style="text-align:center;padding:40px;color:#888;">No data yet for this period.<br><span style="font-size:0.8rem;">Complete an exam to appear here!</span></div>';
+    }
+    const max=entries[0]?.score||1;
+    let html='<div style="background:var(--card);border-radius:14px;overflow:hidden;border:1px solid #2a2a3e;">';
+    entries.forEach((e,i)=>{
+      const col=e.score>=70?'#FFD700':e.score>=50?'#ffc107':'#dc3545';
+      const medal=i<3?medals[i]:'<span style="color:#666;font-size:0.8rem;">#'+(i+1)+'</span>';
+      const isMe=currentUser&&e.name===currentUser.name;
+      html+='<div class="lb-entry'+(isMe?' me':'')+'">'
+        +'<div class="lb-rank">'+medal+'</div>'
+        +'<div class="lb-info">'
+          +'<div class="lb-name" style="color:'+(isMe?'var(--gold)':'var(--white)')+'">'+e.name+(isMe?' 👈 You':'')+' </div>'
+          +'<div class="lb-meta">'+(e.subject||'')+(e.extra?' · '+e.extra:'')+'</div>'
+          +'<div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:'+(e.score/max*100).toFixed(0)+'%;background:'+col+';"></div></div>'
+        +'</div>'
+        +'<div class="lb-score" style="color:'+col+';">'+e.score+(scoreLabel||'%')+'</div>'
+      +'</div>';
+    });
+    html+='</div>';
+    // My stats bar
+    if(currentUser){
+      const me=entries.find(e=>e.name===currentUser.name);
+      const myRank=entries.findIndex(e=>e.name===currentUser.name)+1;
+      if(me){
+        html+='<div style="margin-top:10px;background:rgba(255,215,0,0.07);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">'
+          +'<span style="font-size:0.78rem;color:#aaa;">Your Rank</span>'
+          +'<span style="font-weight:900;color:var(--gold);">#'+myRank+' of '+entries.length+'</span>'
+          +'<span style="font-weight:900;color:var(--gold);">'+me.score+(scoreLabel||'%')+'</span>'
+        +'</div>';
+      }
+    }
+    return html;
+  }
+
+  try{
+    const now=new Date();
+    const todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()).toISOString();
+    const weekStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay()).toISOString();
+
+    let html='';
+
+    if(tab==='today'){
+      const {data}=await supa.from('attempts').select('user_name,percent,subject,created_at').gte('created_at',todayStart).order('percent',{ascending:false}).limit(50);
+      // Best score per user today
+      const best={};
+      (data||[]).forEach(r=>{if(!best[r.user_name]||r.percent>best[r.user_name].score)best[r.user_name]={name:r.user_name,score:r.percent,subject:r.subject,extra:new Date(r.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})};});
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🌅 Today\'s Best Scores</div>'+buildTable(entries);
+    }
+    else if(tab==='week'){
+      const {data}=await supa.from('attempts').select('user_name,percent,subject').gte('created_at',weekStart).order('percent',{ascending:false}).limit(100);
+      const best={};
+      (data||[]).forEach(r=>{if(!best[r.user_name]||r.percent>best[r.user_name].score)best[r.user_name]={name:r.user_name,score:r.percent,subject:r.subject};});
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">📅 This Week\'s Best Scores</div>'+buildTable(entries);
+    }
+    else if(tab==='alltime'){
+      const {data}=await supa.from('attempts').select('user_name,percent,subject').order('percent',{ascending:false}).limit(200);
+      const best={};
+      (data||[]).forEach(r=>{if(!best[r.user_name]||r.percent>best[r.user_name].score)best[r.user_name]={name:r.user_name,score:r.percent,subject:r.subject};});
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🏆 All-Time Best Scores</div>'+buildTable(entries);
+    }
+    else if(tab==='avg'){
+      const {data}=await supa.from('attempts').select('user_name,percent');
+      const map={};
+      (data||[]).forEach(r=>{if(!map[r.user_name])map[r.user_name]={name:r.user_name,scores:[],count:0};map[r.user_name].scores.push(r.percent);map[r.user_name].count++;});
+      const entries=Object.values(map).map(u=>({name:u.name,score:Math.round(u.scores.reduce((s,x)=>s+x,0)/u.scores.length),extra:u.count+' attempt'+(u.count>1?'s':'')})).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">📊 Average Score Rankings</div>'+buildTable(entries);
+    }
+    else if(tab==='daily'){
+      const todayKey=new Date().toISOString().split('T')[0];
+      const {data}=await supa.from('daily_scores').select('user_name,percent,score,total,created_at').eq('challenge_date',todayKey).order('percent',{ascending:false}).limit(50);
+      const entries=(data||[]).map(r=>({name:r.user_name,score:r.percent,extra:r.score+'/'+r.total+' correct'}));
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">⚡ Today\'s Daily Challenge Rankings</div>'+buildTable(entries);
+    }
+    else if(tab==='dailymock'){
+      const todayKey=new Date().toISOString().split('T')[0];
+      const {data}=await supa.from('mock_scores').select('user_name,percent,score,total,mock_type,created_at').eq('mock_date',todayKey).order('percent',{ascending:false}).limit(50);
+      const entries=(data||[]).map(r=>({
+        name:r.user_name,
+        score:r.percent,
+        extra:(r.mock_type||'Mock')+' · '+r.score+'/'+r.total+' correct · '+new Date(r.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})
+      }));
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🎯 Today\'s Mock Challenge Rankings</div>'+buildTable(entries);
+    }
+    else if(tab==='weeklymock'){
+      const wk=getWeekKey();
+      const {data}=await supa.from('mock_scores').select('user_name,percent,score,total,mock_type,created_at').eq('challenge_week',wk).order('percent',{ascending:false}).limit(50);
+      // Best score per user this week
+      const best={};
+      (data||[]).forEach(r=>{
+        if(!best[r.user_name]||r.percent>best[r.user_name].score){
+          best[r.user_name]={name:r.user_name,score:r.percent,extra:(r.mock_type||'Mock')+' · '+r.score+'/'+r.total+' correct'};
+        }
+      });
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">📅 This Week\'s Mock Challenge Rankings</div>'+buildTable(entries);
+    }
+    else if(tab==='jamb'){
+      const {data}=await supa.from('jamb_attempts').select('user_name,aggregate_400,session_type,created_at').order('aggregate_400',{ascending:false}).limit(100);
+      const best={};
+      (data||[]).forEach(r=>{if(!best[r.user_name]||r.aggregate_400>best[r.user_name].score)best[r.user_name]={name:r.user_name,score:r.aggregate_400,extra:r.session_type+' · '+new Date(r.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short'})};});
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">📝 JAMB All-Time Best Aggregate</div>'+buildTable(entries,' /400');
+    }
+    else if(tab==='jambweekly'){
+      const wk=getWeekKey();
+      const {data}=await supa.from('weekly_challenges').select('user_name,total_score,percent,created_at').eq('challenge_week',wk).eq('challenge_type','jamb').order('total_score',{ascending:false}).limit(50);
+      const best={};
+      (data||[]).forEach(r=>{if(!best[r.user_name]||r.total_score>best[r.user_name].score)best[r.user_name]={name:r.user_name,score:r.total_score,extra:'Week '+wk.split('_W')[1]+' · '+new Date(r.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short'})};});
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">📝 JAMB Weekly Challenge — Week '+wk.split('_W')[1]+'</div>'
+        +'<div style="font-size:0.72rem;color:#888;text-align:center;margin-bottom:10px;">Resets every Monday. Past records saved in 🗂️ Past Records tab.</div>'
+        +buildTable(entries,' /400');
+    }
+    else if(tab==='rsu'){
+      const {data}=await supa.from('attempts').select('user_name,percent,subject,created_at').eq('subject','rsu').order('percent',{ascending:false}).limit(100);
+      // Also include mixed RSU attempts — get all and filter by subject containing RSU subjects
+      const {data:data2}=await supa.from('attempts').select('user_name,percent,subject,created_at').in('subject',['english','mathematics','biology','chemistry','physics','literature','government','crs','currentaffairs']).order('percent',{ascending:false}).limit(200);
+      const allRSU=[...(data||[]),...(data2||[])];
+      const best={};
+      allRSU.forEach(r=>{if(!best[r.user_name]||r.percent>best[r.user_name].score)best[r.user_name]={name:r.user_name,score:r.percent,extra:r.subject+' · '+new Date(r.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short'})};});
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🏛️ RSU Post UTME — All-Time Best</div>'+buildTable(entries);
+    }
+    else if(tab==='utmedaily'){
+      const todayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate()).toISOString();
+      const {data}=await supa.from('attempts').select('user_name,percent,subject,created_at').gte('created_at',todayStart).order('percent',{ascending:false}).limit(200);
+      const best={};
+      (data||[]).forEach(r=>{if(!best[r.user_name]||r.percent>best[r.user_name].score)best[r.user_name]={name:r.user_name,score:r.percent,extra:r.subject+' · '+new Date(r.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})};});
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">🎓 Post UTME Practice — Today\'s Rankings</div>'
+        +'<div style="font-size:0.72rem;color:#888;text-align:center;margin-bottom:10px;">Resets at midnight every day.</div>'
+        +buildTable(entries);
+    }
+    else if(tab==='practice'){
+      const {data}=await supa.from('attempts').select('user_name,percent,subject,created_at').order('created_at',{ascending:false}).limit(500);
+      // Best ever per user across all practice
+      const best={};
+      (data||[]).forEach(r=>{if(!best[r.user_name]||r.percent>best[r.user_name].score)best[r.user_name]={name:r.user_name,score:r.percent,extra:'Best: '+r.percent+'% in '+r.subject};});
+      const entries=Object.values(best).sort((a,b)=>b.score-a.score);
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">📚 Practice Mode — All-Time Best Per User</div>'+buildTable(entries);
+    }
+    else if(tab==='archive'){
+      // Show past leaderboard records — grouped by week
+      const {data:wdata}=await supa.from('weekly_challenges').select('user_name,total_score,percent,challenge_week,challenge_type,created_at').order('created_at',{ascending:false}).limit(200);
+      const {data:mdata}=await supa.from('mock_scores').select('user_name,percent,aggregate_400,mock_type,mock_date,challenge_week,created_at').order('created_at',{ascending:false}).limit(200);
+      const {data:ddata}=await supa.from('daily_scores').select('user_name,percent,score,total,challenge_date,created_at').order('created_at',{ascending:false}).limit(200);
+
+      // Group weekly challenges by week
+      const weekGroups={};
+      (wdata||[]).forEach(r=>{
+        const wk=r.challenge_week||'Unknown';
+        if(!weekGroups[wk])weekGroups[wk]={week:wk,entries:[],type:r.challenge_type};
+        weekGroups[wk].entries.push({name:r.user_name,score:r.total_score,extra:r.challenge_type});
+      });
+
+      // Group mock scores by week
+      (mdata||[]).forEach(r=>{
+        const wk=r.challenge_week||r.mock_date||'Unknown';
+        if(!weekGroups[wk])weekGroups[wk]={week:wk,entries:[],type:'mock'};
+        weekGroups[wk].entries.push({name:r.user_name,score:r.percent,extra:r.mock_type||'Mock'});
+      });
+
+      const medals=['🥇','🥈','🥉'];
+      html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:14px;text-transform:uppercase;letter-spacing:1px;">🗂️ Past Leaderboard Records</div>';
+
+      // Past daily challenges
+      const dayGroups={};
+      (ddata||[]).forEach(r=>{
+        const dk=r.challenge_date||'Unknown';
+        if(!dayGroups[dk])dayGroups[dk]={date:dk,entries:[]};
+        dayGroups[dk].entries.push({name:r.user_name,score:r.percent,extra:r.score+'/'+r.total+' correct'});
+      });
+
+      const sortedDays=Object.keys(dayGroups).sort((a,b)=>b.localeCompare(a)).slice(0,5);
+      if(sortedDays.length){
+        html+='<div style="color:#aaa;font-size:0.78rem;font-weight:700;margin-bottom:8px;margin-top:4px;">⚡ Past Daily Challenge Results</div>';
+        sortedDays.forEach(dk=>{
+          const grp=dayGroups[dk];
+          const sorted=grp.entries.sort((a,b)=>b.score-a.score).slice(0,3);
+          const dateLabel=new Date(dk).toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+          html+='<div style="background:var(--card);border-radius:10px;margin-bottom:10px;border:1px solid #2a2a3e;overflow:hidden;">'
+            +'<div style="background:rgba(255,215,0,0.08);padding:8px 14px;font-size:0.75rem;font-weight:700;color:var(--gold);">📅 '+dateLabel+'</div>';
+          sorted.forEach((e,i)=>{
+            const col=e.score>=70?'#FFD700':e.score>=50?'#ffc107':'#dc3545';
+            html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #1a1a2e;">'
+              +'<span style="font-size:1rem;">'+(medals[i]||'#'+(i+1))+'</span>'
+              +'<span style="flex:1;font-size:0.82rem;font-weight:700;">'+e.name+'</span>'
+              +'<span style="color:'+col+';font-weight:900;font-size:0.9rem;">'+e.score+'%</span>'
+            +'</div>';
+          });
+          html+='</div>';
+        });
+      }
+
+      // Past weekly records
+      const sortedWeeks=Object.keys(weekGroups).sort((a,b)=>b.localeCompare(a)).slice(0,5);
+      if(sortedWeeks.length){
+        html+='<div style="color:#aaa;font-size:0.78rem;font-weight:700;margin-bottom:8px;margin-top:12px;">📅 Past Weekly & Mock Records</div>';
+        sortedWeeks.forEach(wk=>{
+          const grp=weekGroups[wk];
+          const sorted=grp.entries.sort((a,b)=>b.score-a.score).slice(0,3);
+          const wkLabel=wk.includes('_W')?'Week '+wk.split('_W')[1]+' ('+wk.split('_W')[0]+')':wk;
+          html+='<div style="background:var(--card);border-radius:10px;margin-bottom:10px;border:1px solid #2a2a3e;overflow:hidden;">'
+            +'<div style="background:rgba(255,215,0,0.08);padding:8px 14px;font-size:0.75rem;font-weight:700;color:var(--gold);">🗓 '+wkLabel+'</div>';
+          sorted.forEach((e,i)=>{
+            const col=e.score>=70?'#FFD700':e.score>=50?'#ffc107':'#dc3545';
+            html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #1a1a2e;">'
+              +'<span style="font-size:1rem;">'+(medals[i]||'#'+(i+1))+'</span>'
+              +'<span style="flex:1;font-size:0.82rem;font-weight:700;">'+e.name+'</span>'
+              +'<span style="color:'+col+';font-weight:900;font-size:0.9rem;">'+e.score+(grp.type==='jamb'?' /400':'%')+'</span>'
+            +'</div>';
+          });
+          html+='</div>';
+        });
+      }
+
+      if(!sortedDays.length&&!sortedWeeks.length){
+        html+='<div style="text-align:center;padding:40px;color:#888;">No past records yet.<br><span style="font-size:0.8rem;">Records appear here after daily and weekly challenges are completed.</span></div>';
+      }
+    }
+
+    body.innerHTML=html||'<div style="padding:20px;color:#888;text-align:center;">No data yet.</div>';
+
+  }catch(err){
+    console.error('Leaderboard error:',err);
+    body.innerHTML='<div style="color:var(--wrong);padding:20px;text-align:center;">⚠️ Could not load leaderboard.<br><span style="font-size:0.8rem;color:#888;">Check your internet connection and try again.</span></div>';
+  }
+}
+
+// ============================================================
+// ADMIN BULK PARSER TAB — saves directly to cloud
+// ============================================================
+async function renderAdminBulkParser(){
+  const body=document.getElementById('adminBody');
+  const subjOptions=Object.entries(Object.assign({},subjectMeta,JAMB_SUBJECTS))
+    .map(([k,v])=>'<option value="'+k+'">'+v.icon+' '+v.name+'</option>').join('');
+
+  body.innerHTML='<div class="admin-card">'
+    +'<div style="color:var(--gold);font-weight:700;margin-bottom:6px;">📋 Bulk Question Parser → Cloud</div>'
+    +'<div style="font-size:0.75rem;color:#aaa;margin-bottom:12px;">Any question you parse here is saved directly to Supabase and will appear for ALL users instantly.</div>'
+    +'<div class="af-row" style="margin-bottom:10px;">'
+      +'<div><label class="af-label">Subject (or Auto-detect)</label><select class="af-input" id="abqSubject"><option value="auto">🔍 Auto-detect</option>'+subjOptions+'</select></div>'
+      +'<div><label class="af-label">Difficulty</label><select class="af-input" id="abqDiff"><option value="easy">Easy</option><option value="moderate" selected>Moderate</option><option value="difficult">Difficult</option></select></div>'
+    +'</div>'
+    +'<label class="af-label">Paste Questions (Any Format)</label>'
+    +'<textarea class="af-input" id="abqRaw" rows="10" style="resize:vertical;min-height:180px;" placeholder="Paste questions here in any format:\n\n1. What is H2O?\nA) Oxygen\nB) Water\nC) Salt\nD) Gas\nAnswer: B\nExplanation: H2O is the chemical formula for water.\n\n2. Next question..."></textarea>'
+    +'<button onclick="adminBulkParse()" style="background:linear-gradient(135deg,var(--green),var(--gold));color:#fff;border:none;border-radius:10px;padding:12px 28px;font-weight:700;cursor:pointer;width:100%;margin-top:10px;">☁️ Parse & Save to Cloud (All Users)</button>'
+    +'<div id="abqResult" style="margin-top:12px;"></div>'
+  +'</div>';
+}
+
+async function adminBulkParse(){
+  const raw=document.getElementById('abqRaw').value.trim();
+  const selSubj=document.getElementById('abqSubject').value;
+  const diff=document.getElementById('abqDiff').value;
+  const resultDiv=document.getElementById('abqResult');
+  if(!raw){resultDiv.innerHTML='<div style="color:var(--wrong);">Please paste some questions first.</div>';return;}
+  resultDiv.innerHTML='<div style="color:#aaa;">⏳ Parsing questions...</div>';
+
+  const blocks=splitIntoQuestionBlocks(raw);
+  const parsed=[];
+  blocks.forEach(block=>{
+    const p=parseBlock(block);
+    if(!p)return;
+    let subj=selSubj!=='auto'?selSubj:(p.subjectHint?detectSubjectFromHint(p.subjectHint):detectSubject(p.q+' '+block));
+    p.subject=subj;
+    p.difficulty=diff;
+    parsed.push(p);
   });
-  html+='</div>';
 
-  // Personal best highlight
-  const myBest=Math.max(...h.map(x=>x.percent));
-  const myAvg=Math.round(h.reduce((s,x)=>s+x.percent,0)/h.length);
-  html+='<div style="margin-top:16px;background:rgba(255,215,0,0.08);border:1px solid var(--gold);border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">'
-    +'<div><div style="font-size:1.2rem;font-weight:900;color:#FFD700;">'+myBest+'%</div><div style="font-size:0.65rem;color:#888;">Your Best</div></div>'
-    +'<div><div style="font-size:1.2rem;font-weight:900;color:var(--gold);">'+myAvg+'%</div><div style="font-size:0.65rem;color:#888;">Your Average</div></div>'
-    +'<div><div style="font-size:1.2rem;font-weight:900;color:var(--gold);">'+h.length+'</div><div style="font-size:0.65rem;color:#888;">Total Attempts</div></div>'
-    +'</div>';
+  if(!parsed.length){
+    resultDiv.innerHTML='<div style="color:var(--wrong);">❌ Could not parse any questions. Make sure options are on separate lines starting with A. B. C. D. and include "Answer: B"</div>';
+    return;
+  }
 
-  body.innerHTML=html;
+  resultDiv.innerHTML='<div style="color:#aaa;">⏳ Saving '+parsed.length+' question(s) to cloud...</div>';
+
+  // Save each to Supabase
+  let saved=0,failed=0;
+  for(const p of parsed){
+    try{
+      const opts=p.opts||[];
+      const {error}=await supa.from('questions').insert([{
+        subject:p.subject,
+        question:p.q,
+        option_a:opts[0]||'',
+        option_b:opts[1]||'',
+        option_c:opts[2]||'',
+        option_d:opts[3]||'',
+        option_e:opts[4]||null,
+        correct_answer:p.ans||0,
+        explanation:p.explanation||'',
+        difficulty:p.difficulty||'moderate',
+        added_by:currentUser?.name||'admin'
+      }]);
+      if(error){failed++;console.log('Insert error:',error);}
+      else{
+        saved++;
+        // Also add to local QB immediately
+        if(!QB[p.subject])QB[p.subject]=[];
+        QB[p.subject].push({q:p.q,opts:p.opts,ans:p.ans,explanation:p.explanation,difficulty:p.difficulty});
+      }
+    }catch(e){failed++;console.log('Exception:',e);}
+  }
+
+  // Show preview
+  const lbls=['A','B','C','D','E'];
+  let html='<div style="background:rgba(40,167,69,0.1);border:1px solid var(--correct);border-radius:10px;padding:12px;margin-bottom:12px;">'
+    +'<div style="color:var(--correct);font-weight:700;">✅ '+saved+' question(s) saved to cloud!'+(failed?' ('+failed+' failed)':'')+'</div>'
+    +'<div style="font-size:0.75rem;color:#aaa;margin-top:4px;">These are now visible to ALL users on ALL devices instantly.</div>'
+  +'</div>';
+  parsed.slice(0,5).forEach((p,i)=>{
+    const m=Object.assign({},subjectMeta,JAMB_SUBJECTS)[p.subject]||{icon:'📚',name:p.subject};
+    html+='<div class="qb-q-card"><span class="qb-tag">'+m.icon+' '+m.name+'</span> <span class="diff-badge '+p.difficulty+'">'+p.difficulty+'</span>'
+      +'<div class="qb-q-text">'+(i+1)+'. '+p.q+'</div>';
+    (p.opts||[]).forEach((o,oi)=>{html+='<div class="qb-opt'+(oi===p.ans?' correct':'')+'">'+lbls[oi]+'. '+o+(oi===p.ans?' ✓':'')+'</div>';});
+    if(p.explanation)html+='<div class="qb-exp">💡 '+p.explanation+'</div>';
+    html+='</div>';
+  });
+  if(parsed.length>5)html+='<div style="text-align:center;color:#888;font-size:0.78rem;padding:8px;">...and '+(parsed.length-5)+' more question(s) saved.</div>';
+  resultDiv.innerHTML=html;
+  document.getElementById('abqRaw').value='';
 }
 
 // ===== DAILY CHALLENGE =====
@@ -3597,7 +3912,19 @@ function endQuiz(timeout,antiCheat){
     const total=currentSession.length;
     const pct=total>0?Math.round(correct/total*100):0;
     const key=getDailyChallengeKey();
+    const todayKey=new Date().toISOString().split('T')[0];
     try{localStorage.setItem(key,JSON.stringify({pct,correct,total,date:new Date().toISOString()}));}catch(e){}
+    // Save to Supabase daily_scores
+    if(currentUser){
+      supa.from('daily_scores').insert([{
+        user_id:currentUser.id,
+        user_name:currentUser.name,
+        challenge_date:todayKey,
+        score:correct,
+        total:total,
+        percent:pct
+      }]).then(({error})=>{if(error)console.log('Daily score save error:',error);});
+    }
     window._isDailyChallenge=false;
   }
   _endQuizCore(timeout,antiCheat);
@@ -3711,8 +4038,15 @@ function showSplash(){
   if(!currentUser){showLogin();return;}
   document.getElementById('splash').style.display='flex';
   document.getElementById('splashWelcome').textContent='Welcome, '+currentUser.name.split(' ')[0]+'! 👋';
-  if(currentUser.is_admin){document.getElementById('adminBtn').style.display='';}
+  // Admin button: ONLY show for admin users
+  const adminBtn=document.getElementById('adminBtn');
+  if(currentUser.is_admin){
+    adminBtn.style.display='';
+  } else {
+    adminBtn.style.display='none';
+  }
   loadSplashStats();updateCalcFloatBtn();setThemeToggleVisible(true);
+  checkCloudStatus();
 }
 function showSubjectSelect(){
   if(!getStream()){showStreamSelect();return;}
@@ -3725,7 +4059,7 @@ function showReview(){hideAll();document.getElementById('reviewScreen').style.di
 function showHistory(){hideAll();document.getElementById('historyScreen').style.display='flex';renderHistory();updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showAttemptDetail(idx){hideAll();document.getElementById('attemptDetailScreen').style.display='flex';renderAttemptDetail(idx);updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showTopicBank(){hideAll();document.getElementById('topicBankScreen').style.display='flex';renderTopicBank();updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showQBank(){hideAll();document.getElementById('qbankScreen').style.display='flex';populateQbSubjects();updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showQBank(){if(!currentUser||!currentUser.is_admin){alert('⛔ Question Bank is only accessible to the admin.');return;}hideAll();document.getElementById('qbankScreen').style.display='flex';populateQbSubjects();updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showLeaderboard(){hideAll();document.getElementById('leaderboardScreen').style.display='flex';renderLeaderboard('today');updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showDailyChallenge(){hideAll();document.getElementById('dailyChallengeScreen').style.display='flex';renderDailyChallenge();updateCalcFloatBtn();setThemeToggleVisible(true);}
 
@@ -4093,6 +4427,27 @@ async function finishJAMBExam(timedOut){
         session_type:jambSessionType
       }]);
     }catch(e){console.log('JAMB cloud save error',e);}
+
+    // Save to mock_scores for daily/weekly mock leaderboard
+    if(jambSessionType==='mock'||jambSessionType==='weekly'){
+      try{
+        const todayKey=new Date().toISOString().split('T')[0];
+        const wk=getWeekKey();
+        await supa.from('mock_scores').insert([{
+          user_id:currentUser.id,
+          user_name:currentUser.name,
+          user_email:currentUser.email,
+          mock_type:jambSessionType==='weekly'?'JAMB Weekly':'JAMB Mock',
+          score:results.reduce((s,r)=>s+r.correct,0),
+          total:jambAllQuestions.length,
+          percent:Math.round(aggregate/4),
+          aggregate_400:aggregate,
+          mock_date:todayKey,
+          challenge_week:wk
+        }]);
+      }catch(e){console.log('Mock score save error',e);}
+    }
+
     // Weekly challenge: mark done
     if(jambSessionType==='weekly'){
       const wk=getWeekKey();
@@ -4273,10 +4628,11 @@ let adminCurrentTab='overview';
 function setAdminTab(tab){
   adminCurrentTab=tab;
   document.querySelectorAll('.admin-tab').forEach((el,i)=>{
-    const tabs=['overview','users','addq','questions','attempts'];
+    const tabs=['overview','users','addq','bulkq','questions','attempts'];
     el.className='admin-tab'+(tabs[i]===tab?' active':'');
   });
-  renderAdminTab(tab);
+  if(tab==='bulkq'){renderAdminBulkParser();}
+  else{renderAdminTab(tab);}
 }
 
 async function renderAdminTab(tab){
@@ -4427,70 +4783,6 @@ async function adminDeleteQuestion(id){
     await supa.from('questions').delete().eq('id',id);
     setAdminTab('questions');
   }catch(e){alert('Delete failed.');}
-}
-
-// ============================================================
-// OVERRIDE renderLeaderboard TO USE SUPABASE
-// ============================================================
-async function renderLeaderboard(tab){
-  const body=document.getElementById('leaderboardBody');
-  body.innerHTML='<div style="text-align:center;padding:30px;color:#888;">Loading leaderboard...</div>';
-
-  try{
-    let data=[];
-    if(tab==='today'){
-      const today=new Date().toISOString().split('T')[0];
-      const {data:d}=await supa.from('attempts').select('user_name,percent,subject,created_at').gte('created_at',today).order('percent',{ascending:false}).limit(30);
-      data=d||[];
-    } else if(tab==='week'){
-      const weekAgo=new Date(Date.now()-7*24*60*60*1000).toISOString();
-      const {data:d}=await supa.from('attempts').select('user_name,percent,subject,created_at').gte('created_at',weekAgo).order('percent',{ascending:false}).limit(30);
-      data=d||[];
-    } else if(tab==='alltime'){
-      const {data:d}=await supa.from('attempts').select('user_name,percent,subject,created_at').order('percent',{ascending:false}).limit(30);
-      data=d||[];
-    } else if(tab==='avg'){
-      // Group by user_name
-      const {data:d}=await supa.from('attempts').select('user_name,percent');
-      if(d){
-        const map={};
-        d.forEach(a=>{if(!map[a.user_name])map[a.user_name]={name:a.user_name,scores:[]};map[a.user_name].scores.push(a.percent);});
-        data=Object.values(map).map(u=>({user_name:u.name,percent:Math.round(u.scores.reduce((s,x)=>s+x,0)/u.scores.length),subject:'Average'})).sort((a,b)=>b.percent-a.percent).slice(0,30);
-      }
-    }
-
-    const medals=['🥇','🥈','🥉'];
-    const tabLabels={today:"Today's",week:"This Week's",alltime:'All-Time',avg:'Average Score'};
-    let html='<div style="text-align:center;color:var(--gold);font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">'+tabLabels[tab]+' Rankings</div>';
-
-    if(!data.length){body.innerHTML=html+'<div style="text-align:center;color:#888;padding:30px;">No attempts in this period yet. Be the first! 🚀</div>';return;}
-
-    html+='<div style="background:var(--card);border-radius:14px;overflow:hidden;border:1px solid #333;">';
-    data.forEach((e,i)=>{
-      const col=e.percent>=70?'#FFD700':e.percent>=50?'#ffc107':'#dc3545';
-      const medal=medals[i]||(''+(i+1));
-      const isMe=e.user_name===currentUser?.name;
-      html+='<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #1a1a2e;'+(isMe?'background:rgba(255,215,0,0.06);':'')+'">'
-        +'<div style="font-size:1.2rem;min-width:30px;text-align:center;">'+medal+'</div>'
-        +'<div style="flex:1;min-width:0;">'
-          +'<div style="font-weight:700;font-size:0.88rem;color:'+(isMe?'var(--gold)':'var(--white)')+';">'+e.user_name+(isMe?' 👈':'')+' </div>'
-          +'<div style="font-size:0.68rem;color:#888;">'+(e.subject||'')+'</div>'
-        +'</div>'
-        +'<div style="font-size:1.2rem;font-weight:900;color:'+col+';">'+e.percent+'%</div>'
-      +'</div>';
-    });
-    html+='</div>';
-    body.innerHTML=html;
-  }catch(err){body.innerHTML='<div style="color:var(--wrong);padding:20px;text-align:center;">Could not load leaderboard. Check your connection.</div>';}
-}
-
-// Override setLbTab to work with async renderLeaderboard
-function setLbTab(tab){
-  document.querySelectorAll('#lbTabs .topic-tab').forEach((el,i)=>{
-    const tabs=['today','week','alltime','avg'];
-    el.className='topic-tab'+(tabs[i]===tab?' active':'');
-  });
-  renderLeaderboard(tab);
 }
 
 // ============================================================
