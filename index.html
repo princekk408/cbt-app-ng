@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RSU & JAMB CBT Practice App</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
 <style>
   :root { --green:#006400;--gold:#FFD700;--dark:#1a1a2e;--card:#16213e;--accent:#0f3460;--text:#e0e0e0;--white:#ffffff;--correct:#28a745;--wrong:#dc3545;--warn:#ffc107;--input-bg:#0d1117;--input-border:#30363d; }
   html[data-theme="light"] { --dark:#f4f5f9;--card:#ffffff;--accent:#e8ecf7;--text:#222232;--white:#1a1a2e;--input-bg:#ffffff;--input-border:#ccc; }
@@ -285,7 +286,42 @@
   input.qb-input{display:block;width:100%;background:var(--input-bg);color:var(--text);border:1px solid var(--input-border);border-radius:10px;font-size:0.85rem;font-family:inherit;margin-bottom:6px;}
   html[data-theme="light"] input.qb-input{background:#fff;color:#222;border-color:#ccc;}
 
-  /* ===== LEADERBOARD TAB BUTTONS ===== */
+  /* ===== CHAT ===== */
+  .chat-bubble{max-width:80%;padding:10px 14px;border-radius:16px;font-size:0.85rem;line-height:1.4;position:relative;}
+  .chat-bubble.mine{background:var(--gold);color:#000;align-self:flex-end;border-bottom-right-radius:4px;}
+  .chat-bubble.theirs{background:var(--card);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid #333;}
+  .chat-name{font-size:0.65rem;font-weight:700;margin-bottom:3px;opacity:0.7;}
+  .chat-time{font-size:0.6rem;opacity:0.6;margin-top:3px;text-align:right;}
+  .chat-row{display:flex;flex-direction:column;}
+  .chat-row.mine{align-items:flex-end;}
+  .chat-row.theirs{align-items:flex-start;}
+  .dm-user-card{background:var(--card);border:1px solid #333;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:0.2s;}
+  .dm-user-card:hover{border-color:var(--gold);}
+  .dm-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--gold));display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#000;flex-shrink:0;}
+
+  /* ===== COMMENTS ===== */
+  .comment-card{background:var(--card);border:1px solid #2a2a3e;border-radius:12px;padding:12px 14px;}
+  .comment-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .comment-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#006400,var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#000;flex-shrink:0;}
+  .comment-author{font-weight:700;font-size:0.82rem;color:var(--gold);}
+  .comment-time{font-size:0.65rem;color:#666;}
+  .comment-text{font-size:0.85rem;line-height:1.5;color:var(--text);margin-bottom:8px;}
+  .comment-actions{display:flex;gap:12px;align-items:center;}
+  .comment-btn{background:none;border:none;color:#888;font-size:0.72rem;cursor:pointer;padding:4px 0;}
+  .comment-btn:hover{color:var(--gold);}
+  .reply-box{background:rgba(255,215,0,0.05);border:1px solid #333;border-radius:10px;padding:10px;margin-top:8px;}
+  .reply-card{background:rgba(0,0,0,0.2);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:8px 10px;margin-top:6px;}
+
+  /* ===== AI ASSISTANT ===== */
+  .ai-bubble{max-width:90%;padding:12px 16px;border-radius:16px;font-size:0.85rem;line-height:1.6;}
+  .ai-bubble.user{background:var(--gold);color:#000;align-self:flex-end;border-bottom-right-radius:4px;}
+  .ai-bubble.assistant{background:var(--card);color:var(--text);align-self:flex-start;border:1px solid #333;border-bottom-left-radius:4px;}
+  .ai-bubble.assistant .ai-label{font-size:0.65rem;color:var(--gold);font-weight:700;margin-bottom:4px;}
+  .ai-typing{display:flex;gap:4px;padding:8px 12px;}
+  .ai-dot{width:8px;height:8px;border-radius:50%;background:#666;animation:aiBounce 1s infinite;}
+  .ai-dot:nth-child(2){animation-delay:0.2s;}
+  .ai-dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes aiBounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-8px);}}
   .lb-tab-btn{background:rgba(255,215,0,0.08);border:1px solid #444;color:#888;border-radius:20px;padding:7px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:0.2s;flex-shrink:0;}
   .lb-tab-btn.active{background:var(--gold);border-color:var(--gold);color:#000;}
   .lb-entry{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #1a1a2e;}
@@ -333,6 +369,7 @@
     <div class="auth-field"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password"></div>
     <button class="auth-btn" onclick="doLogin()">🔐 Sign In</button>
     <div class="auth-err" id="loginErr"></div>
+    <div class="auth-switch">Forgot password? <span onclick="showForgot()">Recover it →</span></div>
     <div class="auth-switch">New here? <span onclick="showRegister()">Create an account →</span></div>
   </div>
 </div>
@@ -347,6 +384,19 @@
     <div class="auth-field"><label>Email Address</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
     <div class="auth-field"><label>Phone Number</label><input type="tel" id="regPhone" placeholder="e.g. 08012345678"></div>
     <div class="auth-field"><label>Password</label><input type="password" id="regPassword" placeholder="Choose a strong password"></div>
+    <div class="auth-field"><label>Security Question (for password recovery)</label>
+      <select id="regSecQ" style="width:100%;background:var(--input-bg);border:1.5px solid var(--input-border);color:var(--text);border-radius:10px;padding:12px 14px;font-size:0.85rem;font-family:inherit;outline:none;">
+        <option value="">-- Choose a security question --</option>
+        <option>What is the name of your primary school?</option>
+        <option>What is your mother's maiden name?</option>
+        <option>What was the name of your first pet?</option>
+        <option>What street did you grow up on?</option>
+        <option>What is your favourite food?</option>
+        <option>What is your favourite teacher's name?</option>
+        <option>What city were you born in?</option>
+      </select>
+    </div>
+    <div class="auth-field"><label>Security Answer</label><input type="text" id="regSecA" placeholder="Your answer (keep this secret)"></div>
     <button class="auth-btn" onclick="doRegister()">✅ Create Account</button>
     <div class="auth-err" id="registerErr"></div>
     <div class="auth-ok" id="registerOk"></div>
@@ -404,15 +454,13 @@
     <button class="topnav-btn" onclick="showTopicBank()">📂 Tracker</button>
     <button class="topnav-btn" onclick="showLeaderboard()">🏆 Leaderboard</button>
     <button class="topnav-btn" onclick="showDailyChallenge()">⚡ Daily Challenge</button>
+    <button class="topnav-btn" onclick="showChat()">💬 Chat</button>
+    <button class="topnav-btn" onclick="showComments()">💭 Discussion</button>
+    <button class="topnav-btn" onclick="showAI()" style="border-color:var(--gold);color:var(--gold);">🤖 AI Assistant</button>
     <button class="topnav-btn" id="adminBtn" style="display:none;border-color:#ff6b6b;color:#ff6b6b;" onclick="showAdmin()">🔐 Admin Panel</button>
     <button class="topnav-btn" style="border-color:#888;color:#888;" onclick="doLogout()">🚪 Logout</button>
   </div>
 
-  <!-- Cloud status indicator -->
-  <div id="cloudStatus" style="margin-top:8px;font-size:0.7rem;display:flex;align-items:center;gap:6px;justify-content:center;">
-    <span id="cloudDot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;"></span>
-    <span id="cloudText" style="color:#666;">Checking connection...</span>
-  </div>
 </div>
 <div id="streamSelect" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:30px 20px;background:var(--dark);">
   <h2 style="margin-top:20px;color:var(--gold);font-size:1.4rem;">Choose Your Stream</h2>
@@ -756,13 +804,112 @@ Ans: B"></textarea>
   <div class="admin-tabs" id="adminTabs">
     <div class="admin-tab active" onclick="setAdminTab('overview')">📊 Overview</div>
     <div class="admin-tab" onclick="setAdminTab('users')">👥 Users</div>
-    <div class="admin-tab" onclick="setAdminTab('addq')">➕ Add Question</div>
-    <div class="admin-tab" onclick="setAdminTab('bulkq')">📋 Bulk Parser</div>
-    <div class="admin-tab" onclick="setAdminTab('questions')">📋 All Questions</div>
+    <div class="admin-tab" onclick="setAdminTab('addq')">➕ Add Q</div>
+    <div class="admin-tab" onclick="setAdminTab('bulkq')">📋 Bulk Parse</div>
+    <div class="admin-tab" onclick="setAdminTab('allquestions')">✏️ All Questions</div>
     <div class="admin-tab" onclick="setAdminTab('attempts')">📈 Attempts</div>
   </div>
   <div class="admin-body" id="adminBody">
     <div style="text-align:center;padding:40px;color:#888;">Loading...</div>
+  </div>
+</div>
+
+<!-- ===== CHAT SCREEN ===== -->
+<div id="chatScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);">
+  <div class="qb-header">
+    <button class="back-btn" onclick="showSplash()">← Back</button>
+    <h2>💬 Community Chat</h2>
+    <button onclick="showChatTab('group')" id="chatGroupBtn" style="background:var(--gold);color:#000;border:none;border-radius:10px;padding:6px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;">👥 Group</button>
+  </div>
+  <div style="display:flex;gap:0;background:var(--card);border-bottom:1px solid #333;">
+    <div class="admin-tab active" id="chatTabGroup" onclick="showChatTab('group')" style="flex:1;text-align:center;">👥 Group Chat</div>
+    <div class="admin-tab" id="chatTabDM" onclick="showChatTab('dm')" style="flex:1;text-align:center;">✉️ Direct Messages</div>
+    <div class="admin-tab" id="chatTabUsers" onclick="showChatTab('users')" style="flex:1;text-align:center;">👤 Users</div>
+  </div>
+  <!-- Group Chat -->
+  <div id="chatGroupPanel" style="flex:1;display:flex;flex-direction:column;max-height:calc(100vh - 130px);">
+    <div id="chatGroupMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+    <div style="padding:10px;background:var(--card);border-top:1px solid #333;display:flex;gap:8px;align-items:flex-end;">
+      <textarea id="chatGroupInput" placeholder="Type a message..." style="flex:1;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:12px;padding:10px;font-size:0.85rem;font-family:inherit;resize:none;max-height:100px;outline:none;" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      <button onclick="sendGroupMessage()" style="background:var(--gold);color:#000;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;cursor:pointer;flex-shrink:0;">➤</button>
+    </div>
+  </div>
+  <!-- DM Panel -->
+  <div id="chatDMPanel" style="display:none;flex:1;flex-direction:column;">
+    <div id="dmConversation" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh-200px);"></div>
+    <div id="dmInputRow" style="display:none;padding:10px;background:var(--card);border-top:1px solid #333;display:flex;gap:8px;align-items:flex-end;">
+      <textarea id="chatDMInput" placeholder="Type a message..." style="flex:1;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:12px;padding:10px;font-size:0.85rem;font-family:inherit;resize:none;max-height:100px;outline:none;" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      <button onclick="sendDM()" style="background:var(--gold);color:#000;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;cursor:pointer;flex-shrink:0;">➤</button>
+    </div>
+    <div id="dmPickUser" style="padding:16px;">
+      <div style="color:#888;font-size:0.8rem;margin-bottom:12px;">Select a user to message:</div>
+      <div id="dmUserList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+  <!-- Users Panel -->
+  <div id="chatUsersPanel" style="display:none;padding:16px;overflow-y:auto;">
+    <div id="chatUsersList"></div>
+  </div>
+</div>
+
+<!-- ===== COMMENTS SCREEN ===== -->
+<div id="commentsScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);">
+  <div class="qb-header"><button class="back-btn" onclick="showSplash()">← Back</button><h2>💭 Discussion Board</h2></div>
+  <div style="padding:14px;max-width:680px;width:100%;margin:0 auto;">
+    <!-- Topic tabs -->
+    <div style="overflow-x:auto;display:flex;gap:6px;margin-bottom:14px;">
+      <button class="lb-tab-btn active" onclick="loadComments('general')">💬 General</button>
+      <button class="lb-tab-btn" onclick="loadComments('mathematics')">🔢 Maths</button>
+      <button class="lb-tab-btn" onclick="loadComments('biology')">🧬 Biology</button>
+      <button class="lb-tab-btn" onclick="loadComments('chemistry')">⚗️ Chemistry</button>
+      <button class="lb-tab-btn" onclick="loadComments('physics')">⚡ Physics</button>
+      <button class="lb-tab-btn" onclick="loadComments('english')">📝 English</button>
+      <button class="lb-tab-btn" onclick="loadComments('jamb')">📝 JAMB Tips</button>
+    </div>
+    <!-- New comment box -->
+    <div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #333;">
+      <textarea id="newCommentInput" placeholder="Share a thought, ask a question, or help others..." style="width:100%;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:10px;padding:10px;font-size:0.85rem;font-family:inherit;resize:vertical;min-height:80px;outline:none;"></textarea>
+      <button onclick="postComment()" style="background:var(--gold);color:#000;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;margin-top:8px;width:100%;">📤 Post</button>
+    </div>
+    <div id="commentsBody" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+</div>
+
+<!-- ===== AI STUDY ASSISTANT SCREEN ===== -->
+<div id="aiScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);">
+  <div class="qb-header"><button class="back-btn" onclick="showSplash()">← Back</button><h2>🤖 AI Study Assistant</h2></div>
+  <div style="flex:1;display:flex;flex-direction:column;max-width:680px;width:100%;margin:0 auto;max-height:100vh;">
+    <div id="aiMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;padding-bottom:80px;"></div>
+    <div style="position:sticky;bottom:0;padding:10px 14px;background:var(--dark);border-top:1px solid #333;display:flex;gap:8px;align-items:flex-end;">
+      <textarea id="aiInput" placeholder="Ask me anything about your studies... (JAMB, RSU, Biology, Maths etc.)" style="flex:1;background:var(--input-bg);border:1.5px solid var(--gold);color:var(--text);border-radius:12px;padding:10px 14px;font-size:0.85rem;font-family:inherit;resize:none;max-height:120px;outline:none;" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askAI();}"></textarea>
+      <button onclick="askAI()" id="aiSendBtn" style="background:var(--gold);color:#000;border:none;border-radius:12px;padding:10px 16px;font-size:1rem;font-weight:700;cursor:pointer;flex-shrink:0;">🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FORGOT PASSWORD SCREEN ===== -->
+<div id="forgotScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo"><span>🔑</span></div>
+    <div class="auth-title">Recover Password</div>
+    <div class="auth-sub">Answer your security question to reset your password</div>
+    <div id="forgotStep1">
+      <div class="auth-field"><label>Your Email Address</label><input type="email" id="forgotEmail" placeholder="your@email.com"></div>
+      <button class="auth-btn" onclick="forgotStep1()">🔍 Find My Account</button>
+      <div class="auth-err" id="forgotErr1"></div>
+    </div>
+    <div id="forgotStep2" style="display:none;">
+      <div style="background:rgba(255,215,0,0.1);border:1px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:14px;">
+        <div style="font-size:0.75rem;color:#aaa;margin-bottom:4px;">Security Question:</div>
+        <div style="font-weight:700;color:var(--white);font-size:0.9rem;" id="forgotQuestion"></div>
+      </div>
+      <div class="auth-field"><label>Your Answer</label><input type="text" id="forgotAnswer" placeholder="Type your answer..."></div>
+      <div class="auth-field"><label>New Password</label><input type="password" id="forgotNewPass" placeholder="Enter new password"></div>
+      <button class="auth-btn" onclick="forgotStep2()">✅ Reset Password</button>
+      <div class="auth-err" id="forgotErr2"></div>
+      <div class="auth-ok" id="forgotOk2"></div>
+    </div>
+    <div class="auth-switch"><span onclick="showLogin()">← Back to Login</span></div>
   </div>
 </div>
 
@@ -2575,9 +2722,35 @@ function toggleTheme(){setTheme(getTheme()==='light'?'dark':'light');}
 setTheme(getTheme());
 
 // ===== NAVIGATION =====
-function hideAll(){['splash','subjectSelect','streamSelect','quiz','results','reviewScreen','historyScreen','attemptDetailScreen','topicBankScreen','qbankScreen','leaderboardScreen','dailyChallengeScreen'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
+function hideAll(){
+  ['splash','subjectSelect','streamSelect','quiz','results','reviewScreen',
+   'historyScreen','attemptDetailScreen','topicBankScreen','qbankScreen',
+   'leaderboardScreen','dailyChallengeScreen','loginScreen','registerScreen',
+   'jambModeScreen','jambSubjectScreen','jambQuizScreen','jambResultsScreen',
+   'generalUTMEScreen','generalPracticeScreen','adminScreen',
+   'chatScreen','commentsScreen','aiScreen','forgotScreen'
+  ].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+}
 function setThemeToggleVisible(v){const b=document.getElementById('themeToggleBtn');if(b)b.className='theme-toggle'+(v?' ontop':'');}
-function showSplash(){isQuizActive=false;hideAll();document.getElementById('splash').style.display='flex';loadSplashStats();updateCalcFloatBtn();setThemeToggleVisible(true);}
+
+function showSplash(){
+  isQuizActive=false;
+  hideAll();
+  currentUser=getCurrentUser();
+  if(!currentUser){showLogin();return;}
+  document.getElementById('splash').style.display='flex';
+  document.getElementById('splashWelcome').textContent='Welcome, '+currentUser.name.split(' ')[0]+'! 👋';
+  // Admin button — ONLY show when is_admin is true
+  const adminBtn=document.getElementById('adminBtn');
+  if(adminBtn){
+    adminBtn.style.display=currentUser.is_admin?'':'none';
+  }
+  loadSplashStats();
+  updateCalcFloatBtn();
+  setThemeToggleVisible(true);
+  checkCloudStatus();
+}
+
 function showSubjectSelect(){
   if(!getStream()){showStreamSelect();return;}
   hideAll();document.getElementById('subjectSelect').style.display='flex';renderSubjectGrid();updateCalcFloatBtn();setThemeToggleVisible(true);
@@ -2592,6 +2765,16 @@ function showTopicBank(){hideAll();document.getElementById('topicBankScreen').st
 function showQBank(){if(!currentUser||!currentUser.is_admin){alert('⛔ Question Bank is only accessible to the admin.');return;}hideAll();document.getElementById('qbankScreen').style.display='flex';populateQbSubjects();updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showLeaderboard(){hideAll();document.getElementById('leaderboardScreen').style.display='flex';renderLeaderboard('today');updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showDailyChallenge(){hideAll();document.getElementById('dailyChallengeScreen').style.display='flex';renderDailyChallenge();updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showLogin(){hideAll();document.getElementById('loginScreen').style.display='flex';document.getElementById('loginErr').textContent='';}
+function showRegister(){hideAll();document.getElementById('registerScreen').style.display='flex';document.getElementById('registerErr').textContent='';document.getElementById('registerOk').textContent='';}
+function showRSUMode(){showSubjectSelect();}
+function showJAMBMode(){hideAll();document.getElementById('jambModeScreen').style.display='flex';setThemeToggleVisible(true);}
+function showGeneralPostUTME(){hideAll();document.getElementById('generalUTMEScreen').style.display='flex';populateUTMESubjects();setThemeToggleVisible(true);}
+function showGeneralPractice(){hideAll();document.getElementById('generalPracticeScreen').style.display='flex';populateGPSubjects();setThemeToggleVisible(true);}
+function showAdmin(){
+  if(!currentUser||!currentUser.is_admin){alert('⛔ Admin access only.');return;}
+  hideAll();document.getElementById('adminScreen').style.display='flex';setAdminTab('overview');setThemeToggleVisible(true);
+}
 
 function loadSplashStats(){
   const h=getHistory();
@@ -2734,12 +2917,7 @@ function confirmSubmit(){
   if(un>0&&!confirm('You have '+un+' unanswered question(s). Submit anyway?'))return;
   endQuiz(false);
 }
-function _endQuizCore(timeout,antiCheat){
-  if(quizEnded)return;quizEnded=true;isQuizActive=false;
-  clearInterval(timerInterval);
-  if(acTimer){clearInterval(acTimer);acTimer=null;}
-  document.getElementById('antiCheatOverlay').classList.remove('show');
-  const timeUsed=Math.max(0,(_quizStartTime||1800)-timeLeft);
+function _endQuizCoreBase(timeout,antiCheat){
   const ts=Math.floor(timeUsed/60)+'m '+(timeUsed%60)+'s';
   let correct=0,wrong=0,skipped=0;
   const bySub={};
@@ -3110,20 +3288,7 @@ function addSingleQuestion(){
 }
 
 // ===== QUESTION BANK: PASTE & CONVERT =====
-function populateQbSubjects(){
-  const selIds=['qbSubjectSelect','sqSubjectSelect'];
-  const allowed=getStreamSubjects();
-  selIds.forEach(sid=>{
-    const sel=document.getElementById(sid);
-    if(!sel)return;
-    sel.innerHTML='<option value="auto">🔍 Auto-detect</option>';
-    Object.entries(subjectMeta).forEach(([k,m])=>{
-      if(!allowed.includes(k))return;
-      const o=document.createElement('option');o.value=k;o.textContent=m.icon+' '+m.name;sel.appendChild(o);
-    });
-    const o=document.createElement('option');o.value='general';o.textContent='📚 General';sel.appendChild(o);
-  });
-}
+// populateQbSubjects defined later with full JAMB subjects support
 
 // Keyword map for auto-detecting subject from raw text
 const subjectKeywords={
@@ -3943,7 +4108,11 @@ const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 let currentUser=null;
 
 function getCurrentUser(){
-  try{return JSON.parse(localStorage.getItem('rsu_user')||'null');}catch(e){return null;}
+  try{
+    const u=JSON.parse(localStorage.getItem('rsu_user')||'null');
+    if(u){u.is_admin=(u.is_admin===true||u.is_admin==='true'||u.is_admin===1);}
+    return u;
+  }catch(e){return null;}
 }
 function saveCurrentUser(u){
   try{localStorage.setItem('rsu_user',JSON.stringify(u));}catch(e){}
@@ -3953,19 +4122,8 @@ function clearCurrentUser(){
 }
 
 // ============================================================
-// AUTH FUNCTIONS
+// CLOUD QUESTION LOADING (admin-added questions from Supabase)
 // ============================================================
-function showLogin(){
-  hideAll();
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('loginErr').textContent='';
-}
-function showRegister(){
-  hideAll();
-  document.getElementById('registerScreen').style.display='flex';
-  document.getElementById('registerErr').textContent='';
-  document.getElementById('registerOk').textContent='';
-}
 
 async function doLogin(){
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
@@ -3977,11 +4135,16 @@ async function doLogin(){
   try{
     const {data,error}=await supa.from('users').select('*').eq('email',email).eq('password_hash',pass).single();
     if(error||!data){errEl.textContent='❌ Incorrect email or password.';return;}
+    // Ensure is_admin is a proper boolean (Supabase can return it as string 'true')
+    data.is_admin=(data.is_admin===true||data.is_admin==='true'||data.is_admin===1);
     currentUser=data;
     saveCurrentUser(data);
     errEl.textContent='';
     onLoginSuccess();
-  }catch(e){errEl.textContent='❌ Connection error. Try again.';}
+  }catch(e){
+    console.error('Login error:',e);
+    errEl.textContent='❌ Connection error. Try again.';
+  }
 }
 
 async function doRegister(){
@@ -4014,61 +4177,11 @@ function doLogout(){
 }
 
 function onLoginSuccess(){
-  // Load any cloud questions into QB
+  // Clear any stale cached session flag
+  localStorage.setItem('rsu_session_v','2');
   loadCloudQuestionsIntoQB();
   showSplash();
 }
-
-// ============================================================
-// NAVIGATION — override hideAll to include new screens
-// ============================================================
-function hideAll(){
-  ['splash','subjectSelect','streamSelect','quiz','results','reviewScreen',
-   'historyScreen','attemptDetailScreen','topicBankScreen','qbankScreen',
-   'leaderboardScreen','dailyChallengeScreen','loginScreen','registerScreen',
-   'jambModeScreen','jambSubjectScreen','jambQuizScreen','jambResultsScreen',
-   'generalUTMEScreen','generalPracticeScreen','adminScreen'
-  ].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-}
-function setThemeToggleVisible(v){const b=document.getElementById('themeToggleBtn');if(b)b.className='theme-toggle'+(v?' ontop':'');}
-
-function showSplash(){
-  isQuizActive=false;hideAll();
-  currentUser=getCurrentUser();
-  if(!currentUser){showLogin();return;}
-  document.getElementById('splash').style.display='flex';
-  document.getElementById('splashWelcome').textContent='Welcome, '+currentUser.name.split(' ')[0]+'! 👋';
-  // Admin button: ONLY show for admin users
-  const adminBtn=document.getElementById('adminBtn');
-  if(currentUser.is_admin){
-    adminBtn.style.display='';
-  } else {
-    adminBtn.style.display='none';
-  }
-  loadSplashStats();updateCalcFloatBtn();setThemeToggleVisible(true);
-  checkCloudStatus();
-}
-function showSubjectSelect(){
-  if(!getStream()){showStreamSelect();return;}
-  hideAll();document.getElementById('subjectSelect').style.display='flex';renderSubjectGrid();updateCalcFloatBtn();setThemeToggleVisible(true);
-}
-function showStreamSelect(){hideAll();document.getElementById('streamSelect').style.display='flex';updateCalcFloatBtn();setThemeToggleVisible(true);}
-function setStream(stream){saveStream(stream);showSubjectSelect();}
-function showResults(){isQuizActive=false;hideAll();document.getElementById('results').style.display='flex';updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showReview(){hideAll();document.getElementById('reviewScreen').style.display='flex';renderReview();updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showHistory(){hideAll();document.getElementById('historyScreen').style.display='flex';renderHistory();updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showAttemptDetail(idx){hideAll();document.getElementById('attemptDetailScreen').style.display='flex';renderAttemptDetail(idx);updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showTopicBank(){hideAll();document.getElementById('topicBankScreen').style.display='flex';renderTopicBank();updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showQBank(){if(!currentUser||!currentUser.is_admin){alert('⛔ Question Bank is only accessible to the admin.');return;}hideAll();document.getElementById('qbankScreen').style.display='flex';populateQbSubjects();updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showLeaderboard(){hideAll();document.getElementById('leaderboardScreen').style.display='flex';renderLeaderboard('today');updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showDailyChallenge(){hideAll();document.getElementById('dailyChallengeScreen').style.display='flex';renderDailyChallenge();updateCalcFloatBtn();setThemeToggleVisible(true);}
-
-// Mode screens
-function showRSUMode(){showSubjectSelect();}
-function showJAMBMode(){hideAll();document.getElementById('jambModeScreen').style.display='flex';setThemeToggleVisible(true);}
-function showGeneralPostUTME(){hideAll();document.getElementById('generalUTMEScreen').style.display='flex';populateUTMESubjects();setThemeToggleVisible(true);}
-function showGeneralPractice(){hideAll();document.getElementById('generalPracticeScreen').style.display='flex';populateGPSubjects();setThemeToggleVisible(true);}
-function showAdmin(){hideAll();document.getElementById('adminScreen').style.display='flex';setAdminTab('overview');setThemeToggleVisible(true);}
 
 // ============================================================
 // CLOUD QUESTION LOADING (admin-added questions from Supabase)
@@ -4625,15 +4738,7 @@ function beginQuiz(customTime){
 // ============================================================
 let adminCurrentTab='overview';
 
-function setAdminTab(tab){
-  adminCurrentTab=tab;
-  document.querySelectorAll('.admin-tab').forEach((el,i)=>{
-    const tabs=['overview','users','addq','bulkq','questions','attempts'];
-    el.className='admin-tab'+(tabs[i]===tab?' active':'');
-  });
-  if(tab==='bulkq'){renderAdminBulkParser();}
-  else{renderAdminTab(tab);}
-}
+// setAdminTab defined later with full tab support including allquestions
 
 async function renderAdminTab(tab){
   const body=document.getElementById('adminBody');
@@ -4827,6 +4932,14 @@ function populateQbSubjects(){
 // ============================================================
 loadCustomQuestionsIntoQB();
 
+// Force re-login if cached session is from old version (before is_admin was properly stored)
+const _sessionVersion=localStorage.getItem('rsu_session_v');
+if(_sessionVersion!=='2'){
+  // Old session — clear it so user logs in fresh and gets is_admin from Supabase
+  clearCurrentUser();
+  localStorage.setItem('rsu_session_v','2');
+}
+
 // Check if already logged in
 currentUser=getCurrentUser();
 if(currentUser){
@@ -4835,6 +4948,659 @@ if(currentUser){
 } else {
   showLogin();
 }
+
+// ============================================================
+// NAVIGATION — new screens
+// ============================================================
+function showChat(){hideAll();document.getElementById('chatScreen').style.display='flex';setThemeToggleVisible(false);showChatTab('group');loadGroupMessages();}
+function showComments(){hideAll();document.getElementById('commentsScreen').style.display='flex';setThemeToggleVisible(true);loadComments('general');}
+function showAI(){hideAll();document.getElementById('aiScreen').style.display='flex';setThemeToggleVisible(true);initAIChat();}
+function showForgot(){hideAll();document.getElementById('forgotScreen').style.display='flex';document.getElementById('forgotErr1').textContent='';document.getElementById('forgotStep1').style.display='block';document.getElementById('forgotStep2').style.display='none';}
+
+// ============================================================
+// FORGOT PASSWORD
+// ============================================================
+let _forgotUserEmail='';
+
+async function forgotStep1(){
+  const email=document.getElementById('forgotEmail').value.trim().toLowerCase();
+  const err=document.getElementById('forgotErr1');
+  if(!email){err.textContent='Please enter your email.';return;}
+  err.textContent='Searching...';
+  try{
+    const {data,error}=await supa.from('users').select('email,security_question').eq('email',email).single();
+    if(error||!data||!data.security_question){
+      err.textContent='❌ Email not found or no security question set.';return;
+    }
+    _forgotUserEmail=email;
+    document.getElementById('forgotQuestion').textContent=data.security_question;
+    document.getElementById('forgotStep1').style.display='none';
+    document.getElementById('forgotStep2').style.display='block';
+    err.textContent='';
+  }catch(e){err.textContent='❌ Connection error.';}
+}
+
+async function forgotStep2(){
+  const answer=document.getElementById('forgotAnswer').value.trim().toLowerCase();
+  const newPass=document.getElementById('forgotNewPass').value.trim();
+  const err=document.getElementById('forgotErr2');
+  const ok=document.getElementById('forgotOk2');
+  if(!answer||!newPass){err.textContent='Please fill in all fields.';return;}
+  if(newPass.length<6){err.textContent='Password must be at least 6 characters.';return;}
+  err.textContent='Verifying...';
+  try{
+    const {data}=await supa.from('users').select('security_answer').eq('email',_forgotUserEmail).single();
+    if(!data||data.security_answer.toLowerCase().trim()!==answer){
+      err.textContent='❌ Wrong answer. Try again.';return;
+    }
+    const {error}=await supa.from('users').update({password_hash:newPass}).eq('email',_forgotUserEmail);
+    if(error){err.textContent='❌ Update failed: '+error.message;return;}
+    err.textContent='';
+    ok.textContent='✅ Password reset! You can now sign in.';
+    setTimeout(()=>showLogin(),2000);
+  }catch(e){err.textContent='❌ Connection error.';}
+}
+
+// ============================================================
+// REGISTER — include security question
+// ============================================================
+async function doRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim().toLowerCase();
+  const phone=document.getElementById('regPhone').value.trim();
+  const pass=document.getElementById('regPassword').value.trim();
+  const secQ=document.getElementById('regSecQ').value.trim();
+  const secA=document.getElementById('regSecA').value.trim().toLowerCase();
+  const errEl=document.getElementById('registerErr');
+  const okEl=document.getElementById('registerOk');
+  errEl.textContent='';okEl.textContent='';
+  if(!name||!email||!phone||!pass){errEl.textContent='Please fill in all fields.';return;}
+  if(!secQ||!secA){errEl.textContent='Please choose a security question and provide an answer.';return;}
+  if(pass.length<6){errEl.textContent='Password must be at least 6 characters.';return;}
+  errEl.textContent='Creating account...';
+  try{
+    const {data:existing}=await supa.from('users').select('id').eq('email',email).maybeSingle();
+    if(existing){errEl.textContent='❌ Email already registered.';return;}
+    const {data,error}=await supa.from('users').insert([{name,email,phone,password_hash:pass,is_admin:false,security_question:secQ,security_answer:secA}]).select().single();
+    if(error){errEl.textContent='❌ Registration failed: '+error.message;return;}
+    errEl.textContent='';
+    okEl.textContent='✅ Account created! Signing you in...';
+    data.is_admin=false;
+    currentUser=data;saveCurrentUser(data);
+    setTimeout(()=>onLoginSuccess(),1000);
+  }catch(e){errEl.textContent='❌ Connection error.';}
+}
+
+// ============================================================
+// GROUP CHAT
+// ============================================================
+let chatRealtimeChannel=null;
+let currentChatTopic='group';
+let currentDMUser=null;
+
+function showChatTab(tab){
+  ['group','dm','users'].forEach(t=>{
+    document.getElementById('chatTab'+t.charAt(0).toUpperCase()+t.slice(1)).className='admin-tab'+(t===tab?' active':'');
+    document.getElementById('chat'+t.charAt(0).toUpperCase()+t.slice(1)+'Panel').style.display=t===tab?'flex':'none';
+  });
+  currentChatTopic=tab;
+  if(tab==='group') loadGroupMessages();
+  if(tab==='dm'){loadDMUsers();if(currentDMUser)loadDMMessages(currentDMUser);}
+  if(tab==='users') loadChatUsers();
+}
+
+async function loadGroupMessages(){
+  const container=document.getElementById('chatGroupMessages');
+  container.innerHTML='<div style="text-align:center;color:#666;font-size:0.8rem;padding:20px;">Loading messages...</div>';
+  try{
+    const {data,error}=await supa.from('messages').select('*').eq('is_group',true).eq('group_name','general').order('created_at',{ascending:true}).limit(100);
+    if(error)throw error;
+    renderGroupMessages(data||[]);
+    // Subscribe to real-time
+    if(chatRealtimeChannel)supa.removeChannel(chatRealtimeChannel);
+    chatRealtimeChannel=supa.channel('group-chat')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:'is_group=eq.true'},(payload)=>{
+        appendGroupMessage(payload.new);
+      }).subscribe();
+  }catch(e){
+    console.error('loadGroupMessages error:',e);
+    container.innerHTML='<div style="color:var(--wrong);padding:20px;">Could not load messages: '+(e.message||JSON.stringify(e))+'</div>';
+  }
+}
+
+function renderGroupMessages(messages){
+  const container=document.getElementById('chatGroupMessages');
+  if(!messages.length){container.innerHTML='<div style="text-align:center;color:#666;font-size:0.8rem;padding:40px;">No messages yet.<br>Be the first to say hello! 👋</div>';return;}
+  container.innerHTML='';
+  messages.forEach(m=>appendGroupMessage(m,false));
+  container.scrollTop=container.scrollHeight;
+}
+
+function appendGroupMessage(m,scroll=true){
+  const container=document.getElementById('chatGroupMessages');
+  const isMe=currentUser&&m.sender_name===currentUser.name;
+  const time=new Date(m.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'});
+  const initials=m.sender_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const div=document.createElement('div');
+  div.className='chat-row '+(isMe?'mine':'theirs');
+  div.innerHTML=(isMe?'':`<div style="display:flex;align-items:flex-end;gap:6px;"><div class="dm-avatar" style="width:28px;height:28px;font-size:0.65rem;">${initials}</div>`)
+    +`<div class="chat-bubble ${isMe?'mine':'theirs'}">
+      ${!isMe?`<div class="chat-name">${m.sender_name}</div>`:''}
+      <div>${m.content}</div>
+      <div class="chat-time">${time}</div>
+    </div>`
+    +(isMe?'':`</div>`);
+  container.appendChild(div);
+  if(scroll) container.scrollTop=container.scrollHeight;
+}
+
+async function sendGroupMessage(){
+  const input=document.getElementById('chatGroupInput');
+  const text=input.value.trim();
+  if(!text||!currentUser)return;
+  input.value='';input.style.height='auto';
+  const {error}=await supa.from('messages').insert([{
+    sender_id:currentUser.id,
+    sender_name:currentUser.name,
+    content:text,
+    is_group:true,
+    group_name:'general',
+    read_by:[currentUser.id]
+  }]);
+  if(error){
+    console.error('sendGroupMessage error:',error);
+    alert('Could not send message: '+(error.message||JSON.stringify(error)));
+  }
+}
+
+// ============================================================
+// DIRECT MESSAGES
+// ============================================================
+async function loadDMUsers(){
+  const list=document.getElementById('dmUserList');
+  list.innerHTML='<div style="color:#666;font-size:0.8rem;">Loading users...</div>';
+  try{
+    const {data,error}=await supa.from('users').select('id,name,email').neq('id',currentUser?.id||'').order('name');
+    if(error)throw error;
+    list.innerHTML='';
+    (data||[]).forEach(u=>{
+      const initials=u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const card=document.createElement('div');
+      card.className='dm-user-card';
+      card.innerHTML=`<div class="dm-avatar">${initials}</div><div><div style="font-weight:700;font-size:0.85rem;">${u.name}</div><div style="font-size:0.7rem;color:#888;">${u.email}</div></div><div style="margin-left:auto;color:var(--gold);font-size:0.75rem;">Message →</div>`;
+      card.onclick=()=>openDM(u);
+      list.appendChild(card);
+    });
+  }catch(e){
+    console.error('loadDMUsers error:',e);
+    list.innerHTML='<div style="color:var(--wrong);">Could not load users: '+(e.message||JSON.stringify(e))+'</div>';
+  }
+}
+
+function openDM(user){
+  currentDMUser=user;
+  document.getElementById('dmPickUser').style.display='none';
+  document.getElementById('dmInputRow').style.display='flex';
+  document.getElementById('dmConversation').innerHTML='<div style="text-align:center;color:#666;font-size:0.8rem;padding:20px;">Loading...</div>';
+  loadDMMessages(user);
+}
+
+async function loadDMMessages(user){
+  const container=document.getElementById('dmConversation');
+  try{
+    const {data,error}=await supa.from('messages')
+      .select('*').eq('is_group',false)
+      .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${currentUser.id})`)
+      .order('created_at',{ascending:true}).limit(100);
+    if(error)throw error;
+    container.innerHTML='';
+    if(!data||!data.length){
+      container.innerHTML=`<div style="text-align:center;color:#666;font-size:0.8rem;padding:40px;">Start a conversation with ${user.name}! 💬</div>`;
+      return;
+    }
+    data.forEach(m=>{
+      const isMe=m.sender_id===currentUser.id;
+      const time=new Date(m.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'});
+      const div=document.createElement('div');
+      div.className='chat-row '+(isMe?'mine':'theirs');
+      div.innerHTML=`<div class="chat-bubble ${isMe?'mine':'theirs'}">
+        ${!isMe?`<div class="chat-name">${m.sender_name}</div>`:''}
+        <div>${m.content}</div>
+        <div class="chat-time">${time}</div>
+      </div>`;
+      container.appendChild(div);
+    });
+    container.scrollTop=container.scrollHeight;
+  }catch(e){
+    console.error('loadDMMessages error:',e);
+    container.innerHTML='<div style="color:var(--wrong);">Could not load messages: '+(e.message||JSON.stringify(e))+'</div>';
+  }
+}
+
+async function sendDM(){
+  if(!currentDMUser||!currentUser)return;
+  const input=document.getElementById('chatDMInput');
+  const text=input.value.trim();
+  if(!text)return;
+  input.value='';input.style.height='auto';
+  const {error}=await supa.from('messages').insert([{
+    sender_id:currentUser.id,
+    sender_name:currentUser.name,
+    receiver_id:currentDMUser.id,
+    receiver_name:currentDMUser.name,
+    content:text,
+    is_group:false
+  }]);
+  if(error){
+    console.error('sendDM error:',error);
+    alert('Could not send message: '+(error.message||JSON.stringify(error)));
+    return;
+  }
+  loadDMMessages(currentDMUser);
+}
+
+async function loadChatUsers(){
+  const list=document.getElementById('chatUsersList');
+  list.innerHTML='<div style="color:#666;font-size:0.8rem;">Loading...</div>';
+  try{
+    const {data}=await supa.from('users').select('id,name,email,created_at').order('name');
+    list.innerHTML='<div style="color:var(--gold);font-size:0.75rem;font-weight:700;margin-bottom:12px;text-transform:uppercase;">👥 All Users ('+( data?.length||0)+')</div>';
+    (data||[]).forEach(u=>{
+      const initials=u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const dt=new Date(u.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});
+      list.innerHTML+=`<div class="dm-user-card" onclick="showChatTab('dm');openDM({id:'${u.id}',name:'${u.name}',email:'${u.email}'})">
+        <div class="dm-avatar">${initials}</div>
+        <div><div style="font-weight:700;font-size:0.85rem;">${u.name}</div><div style="font-size:0.68rem;color:#888;">Joined ${dt}</div></div>
+        <div style="margin-left:auto;color:var(--gold);font-size:0.75rem;">Chat →</div>
+      </div>`;
+    });
+  }catch(e){list.innerHTML='<div style="color:var(--wrong);">Could not load users.</div>';}
+}
+
+// ============================================================
+// COMMENTS / DISCUSSION BOARD
+// ============================================================
+let currentCommentTopic='general';
+let replyingTo=null;
+
+async function loadComments(topic){
+  currentCommentTopic=topic;
+  document.querySelectorAll('#commentsScreen .lb-tab-btn').forEach(b=>{
+    b.className='lb-tab-btn'+(b.getAttribute('onclick')?.includes("'"+topic+"'")?' active':'');
+  });
+  const body=document.getElementById('commentsBody');
+  body.innerHTML='<div style="text-align:center;color:#666;padding:30px;">Loading...</div>';
+  try{
+    const {data,error}=await supa.from('comments').select('*').eq('topic',topic).is('parent_id',null).order('created_at',{ascending:false}).limit(50);
+    if(error)throw error;
+    if(!data||!data.length){body.innerHTML='<div style="text-align:center;color:#666;padding:30px;">No posts yet. Be the first!</div>';return;}
+    body.innerHTML='';
+    for(const c of data){
+      const {data:replies,error:repErr}=await supa.from('comments').select('*').eq('parent_id',c.id).order('created_at',{ascending:true});
+      if(repErr)throw repErr;
+      body.appendChild(buildCommentCard(c,replies||[]));
+    }
+  }catch(e){
+    console.error('loadComments error:',e);
+    body.innerHTML='<div style="color:var(--wrong);padding:20px;">Could not load discussions: '+(e.message||JSON.stringify(e))+'</div>';
+  }
+}
+
+function buildCommentCard(c,replies){
+  const div=document.createElement('div');
+  div.className='comment-card';
+  const initials=c.user_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const time=new Date(c.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const isAdmin=currentUser?.is_admin;
+  div.innerHTML=`
+    <div class="comment-header">
+      <div class="comment-avatar">${initials}</div>
+      <div><div class="comment-author">${c.user_name}</div><div class="comment-time">${time}</div></div>
+      ${isAdmin||c.user_name===currentUser?.name?`<button onclick="deleteComment('${c.id}')" style="margin-left:auto;background:none;border:none;color:#dc3545;cursor:pointer;font-size:0.75rem;">🗑</button>`:''}
+    </div>
+    <div class="comment-text">${c.content}</div>
+    <div class="comment-actions">
+      <button class="comment-btn" onclick="toggleReplyBox('${c.id}')">💬 Reply (${replies.length})</button>
+      <button class="comment-btn" onclick="likeComment('${c.id}',this)">❤️ ${c.likes||0}</button>
+    </div>
+    <div id="replies_${c.id}" style="display:none;margin-top:8px;">
+      ${replies.map(r=>{
+        const ri=r.user_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const rt=new Date(r.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+        return `<div class="reply-card"><div style="font-size:0.72rem;font-weight:700;color:var(--gold);">${r.user_name} · <span style="color:#666;font-weight:400;">${rt}</span></div><div style="font-size:0.82rem;margin-top:4px;">${r.content}</div></div>`;
+      }).join('')}
+      <div class="reply-box" style="margin-top:8px;">
+        <textarea id="replyInput_${c.id}" placeholder="Write a reply..." style="width:100%;background:var(--input-bg);border:1px solid #444;color:var(--text);border-radius:8px;padding:8px;font-size:0.8rem;font-family:inherit;resize:none;outline:none;" rows="2"></textarea>
+        <button onclick="postReply('${c.id}')" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:6px 16px;font-weight:700;cursor:pointer;margin-top:6px;font-size:0.78rem;">Reply ➤</button>
+      </div>
+    </div>`;
+  return div;
+}
+
+function toggleReplyBox(id){
+  const el=document.getElementById('replies_'+id);
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+async function postComment(){
+  const input=document.getElementById('newCommentInput');
+  const text=input.value.trim();
+  if(!text||!currentUser)return;
+  if(text.length<3){alert('Comment is too short.');return;}
+  const {error}=await supa.from('comments').insert([{user_id:currentUser.id,user_name:currentUser.name,content:text,topic:currentCommentTopic,parent_id:null}]);
+  if(error){
+    console.error('postComment error:',error);
+    alert('Could not post comment: '+(error.message||JSON.stringify(error)));
+    return;
+  }
+  input.value='';
+  loadComments(currentCommentTopic);
+}
+
+async function postReply(parentId){
+  const input=document.getElementById('replyInput_'+parentId);
+  const text=input.value.trim();
+  if(!text||!currentUser)return;
+  const {error}=await supa.from('comments').insert([{user_id:currentUser.id,user_name:currentUser.name,content:text,topic:currentCommentTopic,parent_id:parentId}]);
+  if(error){
+    console.error('postReply error:',error);
+    alert('Could not post reply: '+(error.message||JSON.stringify(error)));
+    return;
+  }
+  loadComments(currentCommentTopic);
+}
+
+async function likeComment(id,btn){
+  try{
+    const {data}=await supa.from('comments').select('likes').eq('id',id).single();
+    const newLikes=(data?.likes||0)+1;
+    await supa.from('comments').update({likes:newLikes}).eq('id',id);
+    btn.textContent='❤️ '+newLikes;
+  }catch(e){}
+}
+
+async function deleteComment(id){
+  if(!confirm('Delete this post and all its replies?'))return;
+  try{await supa.from('comments').delete().eq('id',id);loadComments(currentCommentTopic);}catch(e){}
+}
+
+// ============================================================
+// AI STUDY ASSISTANT
+// ============================================================
+const AI_SYSTEM_PROMPT=`You are a brilliant, friendly study assistant for Nigerian students preparing for JAMB and RSU (Rivers State University) Post UTME exams. You know all JAMB subjects thoroughly: Mathematics, English, Biology, Chemistry, Physics, Literature, Government, CRS, Economics, Geography, History and more. You give clear, concise explanations. When solving problems, show step-by-step working. Use Nigerian examples where relevant. You can explain difficult concepts simply, create practice questions, and give exam tips. Always be encouraging and supportive. Keep responses concise and mobile-friendly.`;
+
+let aiHistory=[];
+
+function initAIChat(){
+  const msgs=document.getElementById('aiMessages');
+  if(msgs.children.length>0)return; // already initialised
+  aiHistory=[];
+  const welcome=document.createElement('div');
+  welcome.style.cssText='display:flex;flex-direction:column;gap:0;';
+  welcome.innerHTML=`<div class="ai-bubble assistant">
+    <div class="ai-label">🤖 AI Study Assistant</div>
+    <div>Hello ${currentUser?.name?.split(' ')[0]||'there'}! 👋 I'm your personal study assistant for JAMB and RSU Post UTME.<br><br>
+    I can help you with:<br>
+    📚 <b>Explain any topic</b> — Biology, Maths, Chemistry, Physics...<br>
+    ✏️ <b>Solve past questions</b> — show me a question<br>
+    📝 <b>Create practice questions</b> — just ask<br>
+    💡 <b>Exam tips & strategies</b><br><br>
+    What would you like to study today?</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
+    ${['Explain photosynthesis','Solve: 2x²-8=0','JAMB Maths tips','What is osmosis?','Government: Federalism','English: figures of speech'].map(s=>`<button onclick="quickAsk('${s}')" style="background:rgba(255,215,0,0.1);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">${s}</button>`).join('')}
+  </div>`;
+  msgs.appendChild(welcome);
+}
+
+function quickAsk(text){
+  document.getElementById('aiInput').value=text;
+  askAI();
+}
+
+async function askAI(){
+  const input=document.getElementById('aiInput');
+  const text=input.value.trim();
+  if(!text)return;
+  input.value='';input.style.height='auto';
+  const msgs=document.getElementById('aiMessages');
+  const sendBtn=document.getElementById('aiSendBtn');
+  sendBtn.disabled=true;sendBtn.textContent='⏳';
+
+  // Add user message
+  const userDiv=document.createElement('div');
+  userDiv.style.cssText='display:flex;justify-content:flex-end;';
+  userDiv.innerHTML=`<div class="ai-bubble user">${text}</div>`;
+  msgs.appendChild(userDiv);
+
+  // Add typing indicator
+  const typingDiv=document.createElement('div');
+  typingDiv.innerHTML=`<div class="ai-bubble assistant"><div class="ai-label">🤖 Thinking...</div><div class="ai-typing"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div></div>`;
+  msgs.appendChild(typingDiv);
+  msgs.scrollTop=msgs.scrollHeight;
+
+  // Add to history
+  aiHistory.push({role:'user',content:text});
+  if(aiHistory.length>20) aiHistory=aiHistory.slice(-20); // keep last 20
+
+  try{
+    if(typeof puter==='undefined'||!puter.ai||!puter.ai.chat){
+      throw new Error('AI service unavailable');
+    }
+    const puterMessages=[{role:'system',content:AI_SYSTEM_PROMPT},...aiHistory];
+    const result=await puter.ai.chat(puterMessages,{model:'claude-sonnet-4'});
+    let reply='Sorry, I could not generate a response.';
+    if(typeof result==='string'){
+      reply=result;
+    }else if(result?.message?.content){
+      const c=result.message.content;
+      reply=Array.isArray(c)?c.map(b=>b.text||'').join(''):c;
+    }else if(result?.text){
+      reply=result.text;
+    }
+    aiHistory.push({role:'assistant',content:reply});
+
+    typingDiv.innerHTML=`<div class="ai-bubble assistant"><div class="ai-label">🤖 AI Study Assistant</div><div>${reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')}</div></div>`;
+  }catch(e){
+    console.error('askAI error:',e);
+    const msg=e?.message||e?.error?.message||(typeof e==='string'?e:JSON.stringify(e));
+    typingDiv.innerHTML=`<div class="ai-bubble assistant"><div class="ai-label">🤖 AI Study Assistant</div><div style="color:var(--wrong);">❌ Could not connect: ${msg||'unknown error'}. Check your internet and try again.</div></div>`;
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+  sendBtn.disabled=false;sendBtn.textContent='🚀';
+}
+
+// ============================================================
+// ADMIN — ALL QUESTIONS (built-in + cloud) with edit/delete
+// ============================================================
+async function renderAllQuestionsTab(){
+  const body=document.getElementById('adminBody');
+  body.innerHTML='<div style="text-align:center;padding:20px;color:#888;">Loading all questions...</div>';
+
+  // Built-in questions from QB object
+  const builtIn=[];
+  Object.entries(QB).forEach(([subj,qs])=>{
+    qs.forEach((q,idx)=>{
+      builtIn.push({...q,subject:subj,_source:'local',_idx:idx,id:'local_'+subj+'_'+idx});
+    });
+  });
+
+  // Cloud questions from Supabase
+  let cloudQs=[];
+  try{
+    const {data}=await supa.from('questions').select('*').order('created_at',{ascending:false});
+    cloudQs=data||[];
+  }catch(e){}
+
+  const total=builtIn.length+cloudQs.length;
+  const lbls=['A','B','C','D','E'];
+
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div style="color:var(--gold);font-size:0.8rem;font-weight:700;">📚 ${total} Total Questions</div>
+    <div style="font-size:0.7rem;color:#888;">☁️ ${cloudQs.length} cloud &nbsp;|&nbsp; 💾 ${builtIn.length} built-in</div>
+  </div>
+  <input id="adminQSearch" placeholder="🔍 Search questions..." oninput="filterAdminQ(this.value)" style="width:100%;background:var(--input-bg);border:1px solid #444;color:var(--text);border-radius:10px;padding:10px;font-size:0.85rem;font-family:inherit;outline:none;margin-bottom:12px;">
+  <div id="adminQList">`;
+
+  // Cloud questions first (editable/deletable)
+  cloudQs.forEach(q=>{
+    const sm=Object.assign({},subjectMeta,JAMB_SUBJECTS)[q.subject]||{icon:'📚',name:q.subject};
+    html+=`<div class="admin-card" style="padding:12px;margin-bottom:8px;" data-search="${(q.question+q.subject).toLowerCase()}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <span style="font-size:0.7rem;color:var(--gold);font-weight:700;">☁️ ${sm.icon} ${sm.name}</span>
+        <span class="diff-badge ${q.difficulty||'moderate'}">${q.difficulty||'moderate'}</span>
+      </div>
+      <div style="font-size:0.82rem;color:var(--white);margin-bottom:8px;">${q.question}</div>
+      <div style="font-size:0.72rem;color:#888;margin-bottom:8px;">${[q.option_a,q.option_b,q.option_c,q.option_d].map((o,i)=>`<b style="color:${i===q.correct_answer?'var(--correct)':'#888'}">${lbls[i]}.</b> ${o}`).join(' &nbsp; ')}</div>
+      ${q.explanation?`<div style="font-size:0.72rem;color:#aaa;font-style:italic;">💡 ${q.explanation}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button onclick="adminEditCloudQ('${q.id}')" style="background:rgba(255,215,0,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">✏️ Edit</button>
+        <button onclick="adminDeleteCloudQ('${q.id}')" style="background:rgba(220,53,69,0.15);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">🗑 Delete</button>
+      </div>
+    </div>`;
+  });
+
+  // Built-in questions (admin can delete from local QB)
+  builtIn.slice(0,200).forEach(q=>{
+    const sm=Object.assign({},subjectMeta,JAMB_SUBJECTS)[q.subject]||{icon:'📚',name:q.subject};
+    html+=`<div class="admin-card" style="padding:12px;margin-bottom:8px;opacity:0.85;" data-search="${(q.q+q.subject).toLowerCase()}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <span style="font-size:0.7rem;color:#888;font-weight:700;">💾 ${sm.icon} ${sm.name} (Built-in)</span>
+        <span class="diff-badge ${q.difficulty||'moderate'}">${q.difficulty||'moderate'}</span>
+      </div>
+      <div style="font-size:0.82rem;color:var(--white);margin-bottom:8px;">${q.q}</div>
+      <div style="font-size:0.72rem;color:#888;">${(q.opts||[]).map((o,i)=>`<b style="color:${i===q.ans?'var(--correct)':'#888'}">${lbls[i]}.</b> ${o}`).join(' &nbsp; ')}</div>
+    </div>`;
+  });
+
+  html+='</div>';
+  body.innerHTML=html;
+}
+
+function filterAdminQ(val){
+  const v=val.toLowerCase();
+  document.querySelectorAll('#adminQList .admin-card').forEach(card=>{
+    card.style.display=(!v||card.dataset.search?.includes(v))?'':'none';
+  });
+}
+
+async function adminDeleteCloudQ(id){
+  if(!confirm('Delete this question from cloud? This cannot be undone.'))return;
+  try{
+    await supa.from('questions').delete().eq('id',id);
+    setAdminTab('allquestions');
+  }catch(e){alert('Delete failed.');}
+}
+
+async function adminEditCloudQ(id){
+  const {data}=await supa.from('questions').select('*').eq('id',id).single();
+  if(!data)return;
+  const newQ=prompt('Edit question text:',data.question);
+  if(!newQ)return;
+  const newAns=prompt('Correct answer index (0=A, 1=B, 2=C, 3=D):',data.correct_answer);
+  const newExp=prompt('Explanation (optional):',data.explanation||'');
+  try{
+    await supa.from('questions').update({question:newQ,correct_answer:parseInt(newAns)||0,explanation:newExp||''}).eq('id',id);
+    setAdminTab('allquestions');
+  }catch(e){alert('Update failed.');}
+}
+
+// Admin delete attempt
+async function adminDeleteAttempt(id){
+  if(!confirm('Delete this attempt record?'))return;
+  try{
+    await supa.from('attempts').delete().eq('id',id);
+    setAdminTab('attempts');
+  }catch(e){alert('Delete failed.');}
+}
+
+// ============================================================
+// NO-REPEAT QUESTION SYSTEM
+// ============================================================
+// Hash a question to a short fingerprint
+function hashQ(q){
+  let h=0;
+  const s=(q.q||q.question||'').slice(0,50);
+  for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
+  return Math.abs(h).toString(36);
+}
+
+// Get set of answered question hashes for this user
+async function getAnsweredHashes(){
+  if(!currentUser)return new Set();
+  try{
+    const {data}=await supa.from('user_answered').select('question_hash').eq('user_id',currentUser.id);
+    return new Set((data||[]).map(r=>r.question_hash));
+  }catch(e){return new Set();}
+}
+
+// Mark questions as answered in Supabase
+async function markQuestionsAnswered(questions){
+  if(!currentUser||!questions.length)return;
+  try{
+    const rows=questions.map(q=>({user_id:currentUser.id,question_hash:hashQ(q)}));
+    // upsert to avoid duplicates (unique constraint handles it)
+    await supa.from('user_answered').upsert(rows,{onConflict:'user_id,question_hash',ignoreDuplicates:true});
+  }catch(e){console.log('Mark answered error:',e);}
+}
+
+// Enhanced pickWithDifficulty that excludes already-answered questions
+async function pickQuestionsForUser(pool, count){
+  const answered=await getAnsweredHashes();
+  // Separate fresh from seen
+  const fresh=pool.filter(q=>!answered.has(hashQ(q)));
+  const seen=pool.filter(q=>answered.has(hashQ(q)));
+  // Use fresh first, fall back to seen if not enough
+  let candidates=fresh.length>=count?fresh:[...fresh,...seen];
+  return pickWithDifficulty(candidates,count);
+}
+
+// No-repeat: mark answered then run core quiz end logic
+function _endQuizCore(timeout,antiCheat){
+  if(currentSession&&currentSession.length&&currentUser){
+    markQuestionsAnswered(currentSession);
+  }
+  _endQuizCoreBase(timeout,antiCheat);
+}
+
+// ============================================================
+// UPDATE setAdminTab for new tabs
+// ============================================================
+function setAdminTab(tab){
+  adminCurrentTab=tab;
+  const tabs=['overview','users','addq','bulkq','allquestions','attempts'];
+  document.querySelectorAll('.admin-tab').forEach((el,i)=>{
+    el.className='admin-tab'+(tabs[i]===tab?' active':'');
+  });
+  if(tab==='bulkq') renderAdminBulkParser();
+  else if(tab==='allquestions') renderAllQuestionsTab();
+  else if(tab==='attempts') renderAttemptsList();
+  else renderAdminTab(tab);
+}
+
+// Update attempts tab to include delete buttons
+async function renderAttemptsList(){
+  const body=document.getElementById('adminBody');
+  try{
+    const {data}=await supa.from('attempts').select('*').order('created_at',{ascending:false}).limit(100);
+    if(!data||!data.length){body.innerHTML='<div style="padding:20px;color:#888;">No attempts recorded yet.</div>';return;}
+    let html=`<div style="color:var(--gold);font-size:0.75rem;font-weight:700;margin-bottom:12px;">📈 ${data.length} Recent Attempts</div>`;
+    data.forEach(a=>{
+      const col=a.percent>=70?'#FFD700':a.percent>=50?'#ffc107':'#dc3545';
+      const dt=new Date(a.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      html+=`<div class="user-row" style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;">
+          <div class="uname">${a.user_name} <span style="color:${col};font-weight:900;">${a.percent}%</span></div>
+          <div class="umeta">${a.subject} · ${a.score}/${a.total} correct · ${dt}</div>
+        </div>
+        <button onclick="adminDeleteAttempt('${a.id}')" style="background:rgba(220,53,69,0.15);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:5px 10px;font-size:0.7rem;cursor:pointer;flex-shrink:0;">🗑</button>
+      </div>`;
+    });
+    body.innerHTML=html;
+  }catch(e){body.innerHTML='<div style="color:var(--wrong);padding:20px;">Error loading attempts.</div>';}
+}
+
+// renderAttemptsList is called by setAdminTab for the attempts tab
 
 </script>
 </body>
