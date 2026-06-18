@@ -285,42 +285,7 @@
   input.qb-input{display:block;width:100%;background:var(--input-bg);color:var(--text);border:1px solid var(--input-border);border-radius:10px;font-size:0.85rem;font-family:inherit;margin-bottom:6px;}
   html[data-theme="light"] input.qb-input{background:#fff;color:#222;border-color:#ccc;}
 
-  /* ===== CHAT ===== */
-  .chat-bubble{max-width:80%;padding:10px 14px;border-radius:16px;font-size:0.85rem;line-height:1.4;position:relative;}
-  .chat-bubble.mine{background:var(--gold);color:#000;align-self:flex-end;border-bottom-right-radius:4px;}
-  .chat-bubble.theirs{background:var(--card);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid #333;}
-  .chat-name{font-size:0.65rem;font-weight:700;margin-bottom:3px;opacity:0.7;}
-  .chat-time{font-size:0.6rem;opacity:0.6;margin-top:3px;text-align:right;}
-  .chat-row{display:flex;flex-direction:column;}
-  .chat-row.mine{align-items:flex-end;}
-  .chat-row.theirs{align-items:flex-start;}
-  .dm-user-card{background:var(--card);border:1px solid #333;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:0.2s;}
-  .dm-user-card:hover{border-color:var(--gold);}
-  .dm-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--gold));display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#000;flex-shrink:0;}
-
-  /* ===== COMMENTS ===== */
-  .comment-card{background:var(--card);border:1px solid #2a2a3e;border-radius:12px;padding:12px 14px;}
-  .comment-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-  .comment-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#006400,var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#000;flex-shrink:0;}
-  .comment-author{font-weight:700;font-size:0.82rem;color:var(--gold);}
-  .comment-time{font-size:0.65rem;color:#666;}
-  .comment-text{font-size:0.85rem;line-height:1.5;color:var(--text);margin-bottom:8px;}
-  .comment-actions{display:flex;gap:12px;align-items:center;}
-  .comment-btn{background:none;border:none;color:#888;font-size:0.72rem;cursor:pointer;padding:4px 0;}
-  .comment-btn:hover{color:var(--gold);}
-  .reply-box{background:rgba(255,215,0,0.05);border:1px solid #333;border-radius:10px;padding:10px;margin-top:8px;}
-  .reply-card{background:rgba(0,0,0,0.2);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:8px 10px;margin-top:6px;}
-
-  /* ===== AI ASSISTANT ===== */
-  .ai-bubble{max-width:90%;padding:12px 16px;border-radius:16px;font-size:0.85rem;line-height:1.6;}
-  .ai-bubble.user{background:var(--gold);color:#000;align-self:flex-end;border-bottom-right-radius:4px;}
-  .ai-bubble.assistant{background:var(--card);color:var(--text);align-self:flex-start;border:1px solid #333;border-bottom-left-radius:4px;}
-  .ai-bubble.assistant .ai-label{font-size:0.65rem;color:var(--gold);font-weight:700;margin-bottom:4px;}
-  .ai-typing{display:flex;gap:4px;padding:8px 12px;}
-  .ai-dot{width:8px;height:8px;border-radius:50%;background:#666;animation:aiBounce 1s infinite;}
-  .ai-dot:nth-child(2){animation-delay:0.2s;}
-  .ai-dot:nth-child(3){animation-delay:0.4s;}
-  @keyframes aiBounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-8px);}}
+  /* ===== LEADERBOARD TAB BUTTONS ===== */
   .lb-tab-btn{background:rgba(255,215,0,0.08);border:1px solid #444;color:#888;border-radius:20px;padding:7px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:0.2s;flex-shrink:0;}
   .lb-tab-btn.active{background:var(--gold);border-color:var(--gold);color:#000;}
   .lb-entry{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #1a1a2e;}
@@ -368,7 +333,6 @@
     <div class="auth-field"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password"></div>
     <button class="auth-btn" onclick="doLogin()">🔐 Sign In</button>
     <div class="auth-err" id="loginErr"></div>
-    <div class="auth-switch">Forgot password? <span onclick="showForgot()">Recover it →</span></div>
     <div class="auth-switch">New here? <span onclick="showRegister()">Create an account →</span></div>
   </div>
 </div>
@@ -383,19 +347,6 @@
     <div class="auth-field"><label>Email Address</label><input type="email" id="regEmail" placeholder="your@email.com"></div>
     <div class="auth-field"><label>Phone Number</label><input type="tel" id="regPhone" placeholder="e.g. 08012345678"></div>
     <div class="auth-field"><label>Password</label><input type="password" id="regPassword" placeholder="Choose a strong password"></div>
-    <div class="auth-field"><label>Security Question (for password recovery)</label>
-      <select id="regSecQ" style="width:100%;background:var(--input-bg);border:1.5px solid var(--input-border);color:var(--text);border-radius:10px;padding:12px 14px;font-size:0.85rem;font-family:inherit;outline:none;">
-        <option value="">-- Choose a security question --</option>
-        <option>What is the name of your primary school?</option>
-        <option>What is your mother's maiden name?</option>
-        <option>What was the name of your first pet?</option>
-        <option>What street did you grow up on?</option>
-        <option>What is your favourite food?</option>
-        <option>What is your favourite teacher's name?</option>
-        <option>What city were you born in?</option>
-      </select>
-    </div>
-    <div class="auth-field"><label>Security Answer</label><input type="text" id="regSecA" placeholder="Your answer (keep this secret)"></div>
     <button class="auth-btn" onclick="doRegister()">✅ Create Account</button>
     <div class="auth-err" id="registerErr"></div>
     <div class="auth-ok" id="registerOk"></div>
@@ -453,13 +404,15 @@
     <button class="topnav-btn" onclick="showTopicBank()">📂 Tracker</button>
     <button class="topnav-btn" onclick="showLeaderboard()">🏆 Leaderboard</button>
     <button class="topnav-btn" onclick="showDailyChallenge()">⚡ Daily Challenge</button>
-    <button class="topnav-btn" onclick="showChat()">💬 Chat</button>
-    <button class="topnav-btn" onclick="showComments()">💭 Discussion</button>
-    <button class="topnav-btn" onclick="showAI()" style="border-color:var(--gold);color:var(--gold);">🤖 AI Assistant</button>
     <button class="topnav-btn" id="adminBtn" style="display:none;border-color:#ff6b6b;color:#ff6b6b;" onclick="showAdmin()">🔐 Admin Panel</button>
     <button class="topnav-btn" style="border-color:#888;color:#888;" onclick="doLogout()">🚪 Logout</button>
   </div>
 
+  <!-- Cloud status indicator -->
+  <div id="cloudStatus" style="margin-top:8px;font-size:0.7rem;display:flex;align-items:center;gap:6px;justify-content:center;">
+    <span id="cloudDot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;"></span>
+    <span id="cloudText" style="color:#666;">Checking connection...</span>
+  </div>
 </div>
 <div id="streamSelect" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:30px 20px;background:var(--dark);">
   <h2 style="margin-top:20px;color:var(--gold);font-size:1.4rem;">Choose Your Stream</h2>
@@ -803,112 +756,13 @@ Ans: B"></textarea>
   <div class="admin-tabs" id="adminTabs">
     <div class="admin-tab active" onclick="setAdminTab('overview')">📊 Overview</div>
     <div class="admin-tab" onclick="setAdminTab('users')">👥 Users</div>
-    <div class="admin-tab" onclick="setAdminTab('addq')">➕ Add Q</div>
-    <div class="admin-tab" onclick="setAdminTab('bulkq')">📋 Bulk Parse</div>
-    <div class="admin-tab" onclick="setAdminTab('allquestions')">✏️ All Questions</div>
+    <div class="admin-tab" onclick="setAdminTab('addq')">➕ Add Question</div>
+    <div class="admin-tab" onclick="setAdminTab('bulkq')">📋 Bulk Parser</div>
+    <div class="admin-tab" onclick="setAdminTab('questions')">📋 All Questions</div>
     <div class="admin-tab" onclick="setAdminTab('attempts')">📈 Attempts</div>
   </div>
   <div class="admin-body" id="adminBody">
     <div style="text-align:center;padding:40px;color:#888;">Loading...</div>
-  </div>
-</div>
-
-<!-- ===== CHAT SCREEN ===== -->
-<div id="chatScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);">
-  <div class="qb-header">
-    <button class="back-btn" onclick="showSplash()">← Back</button>
-    <h2>💬 Community Chat</h2>
-    <button onclick="showChatTab('group')" id="chatGroupBtn" style="background:var(--gold);color:#000;border:none;border-radius:10px;padding:6px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;">👥 Group</button>
-  </div>
-  <div style="display:flex;gap:0;background:var(--card);border-bottom:1px solid #333;">
-    <div class="admin-tab active" id="chatTabGroup" onclick="showChatTab('group')" style="flex:1;text-align:center;">👥 Group Chat</div>
-    <div class="admin-tab" id="chatTabDM" onclick="showChatTab('dm')" style="flex:1;text-align:center;">✉️ Direct Messages</div>
-    <div class="admin-tab" id="chatTabUsers" onclick="showChatTab('users')" style="flex:1;text-align:center;">👤 Users</div>
-  </div>
-  <!-- Group Chat -->
-  <div id="chatGroupPanel" style="flex:1;display:flex;flex-direction:column;max-height:calc(100vh - 130px);">
-    <div id="chatGroupMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
-    <div style="padding:10px;background:var(--card);border-top:1px solid #333;display:flex;gap:8px;align-items:flex-end;">
-      <textarea id="chatGroupInput" placeholder="Type a message..." style="flex:1;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:12px;padding:10px;font-size:0.85rem;font-family:inherit;resize:none;max-height:100px;outline:none;" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-      <button onclick="sendGroupMessage()" style="background:var(--gold);color:#000;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;cursor:pointer;flex-shrink:0;">➤</button>
-    </div>
-  </div>
-  <!-- DM Panel -->
-  <div id="chatDMPanel" style="display:none;flex:1;flex-direction:column;">
-    <div id="dmConversation" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh-200px);"></div>
-    <div id="dmInputRow" style="display:none;padding:10px;background:var(--card);border-top:1px solid #333;gap:8px;align-items:flex-end;">
-      <textarea id="chatDMInput" placeholder="Type a message..." style="flex:1;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:12px;padding:10px;font-size:0.85rem;font-family:inherit;resize:none;max-height:100px;outline:none;" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-      <button onclick="sendDM()" style="background:var(--gold);color:#000;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;cursor:pointer;flex-shrink:0;">➤</button>
-    </div>
-    <div id="dmPickUser" style="padding:16px;">
-      <div style="color:#888;font-size:0.8rem;margin-bottom:12px;">Select a user to message:</div>
-      <div id="dmUserList" style="display:flex;flex-direction:column;gap:8px;"></div>
-    </div>
-  </div>
-  <!-- Users Panel -->
-  <div id="chatUsersPanel" style="display:none;padding:16px;overflow-y:auto;">
-    <div id="chatUsersList"></div>
-  </div>
-</div>
-
-<!-- ===== COMMENTS SCREEN ===== -->
-<div id="commentsScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);">
-  <div class="qb-header"><button class="back-btn" onclick="showSplash()">← Back</button><h2>💭 Discussion Board</h2></div>
-  <div style="padding:14px;max-width:680px;width:100%;margin:0 auto;">
-    <!-- Topic tabs -->
-    <div style="overflow-x:auto;display:flex;gap:6px;margin-bottom:14px;">
-      <button class="lb-tab-btn active" onclick="loadComments('general')">💬 General</button>
-      <button class="lb-tab-btn" onclick="loadComments('mathematics')">🔢 Maths</button>
-      <button class="lb-tab-btn" onclick="loadComments('biology')">🧬 Biology</button>
-      <button class="lb-tab-btn" onclick="loadComments('chemistry')">⚗️ Chemistry</button>
-      <button class="lb-tab-btn" onclick="loadComments('physics')">⚡ Physics</button>
-      <button class="lb-tab-btn" onclick="loadComments('english')">📝 English</button>
-      <button class="lb-tab-btn" onclick="loadComments('jamb')">📝 JAMB Tips</button>
-    </div>
-    <!-- New comment box -->
-    <div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #333;">
-      <textarea id="newCommentInput" placeholder="Share a thought, ask a question, or help others..." style="width:100%;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:10px;padding:10px;font-size:0.85rem;font-family:inherit;resize:vertical;min-height:80px;outline:none;"></textarea>
-      <button onclick="postComment()" style="background:var(--gold);color:#000;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;margin-top:8px;width:100%;">📤 Post</button>
-    </div>
-    <div id="commentsBody" style="display:flex;flex-direction:column;gap:10px;"></div>
-  </div>
-</div>
-
-<!-- ===== AI STUDY ASSISTANT SCREEN ===== -->
-<div id="aiScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);">
-  <div class="qb-header"><button class="back-btn" onclick="showSplash()">← Back</button><h2>🤖 AI Study Assistant</h2></div>
-  <div style="flex:1;display:flex;flex-direction:column;max-width:680px;width:100%;margin:0 auto;max-height:100vh;">
-    <div id="aiMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px;padding-bottom:80px;"></div>
-    <div style="position:sticky;bottom:0;padding:10px 14px;background:var(--dark);border-top:1px solid #333;display:flex;gap:8px;align-items:flex-end;">
-      <textarea id="aiInput" placeholder="Ask me anything about your studies... (JAMB, RSU, Biology, Maths etc.)" style="flex:1;background:var(--input-bg);border:1.5px solid var(--gold);color:var(--text);border-radius:12px;padding:10px 14px;font-size:0.85rem;font-family:inherit;resize:none;max-height:120px;outline:none;" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askAI();}"></textarea>
-      <button onclick="askAI()" id="aiSendBtn" style="background:var(--gold);color:#000;border:none;border-radius:12px;padding:10px 16px;font-size:1rem;font-weight:700;cursor:pointer;flex-shrink:0;">🚀</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== FORGOT PASSWORD SCREEN ===== -->
-<div id="forgotScreen" class="auth-screen">
-  <div class="auth-card">
-    <div class="auth-logo"><span>🔑</span></div>
-    <div class="auth-title">Recover Password</div>
-    <div class="auth-sub">Answer your security question to reset your password</div>
-    <div id="forgotStep1">
-      <div class="auth-field"><label>Your Email Address</label><input type="email" id="forgotEmail" placeholder="your@email.com"></div>
-      <button class="auth-btn" onclick="forgotStep1()">🔍 Find My Account</button>
-      <div class="auth-err" id="forgotErr1"></div>
-    </div>
-    <div id="forgotStep2" style="display:none;">
-      <div style="background:rgba(255,215,0,0.1);border:1px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:14px;">
-        <div style="font-size:0.75rem;color:#aaa;margin-bottom:4px;">Security Question:</div>
-        <div style="font-weight:700;color:var(--white);font-size:0.9rem;" id="forgotQuestion"></div>
-      </div>
-      <div class="auth-field"><label>Your Answer</label><input type="text" id="forgotAnswer" placeholder="Type your answer..."></div>
-      <div class="auth-field"><label>New Password</label><input type="password" id="forgotNewPass" placeholder="Enter new password"></div>
-      <button class="auth-btn" onclick="forgotStep2()">✅ Reset Password</button>
-      <div class="auth-err" id="forgotErr2"></div>
-      <div class="auth-ok" id="forgotOk2"></div>
-    </div>
-    <div class="auth-switch"><span onclick="showLogin()">← Back to Login</span></div>
   </div>
 </div>
 
@@ -2721,35 +2575,9 @@ function toggleTheme(){setTheme(getTheme()==='light'?'dark':'light');}
 setTheme(getTheme());
 
 // ===== NAVIGATION =====
-function hideAll(){
-  ['splash','subjectSelect','streamSelect','quiz','results','reviewScreen',
-   'historyScreen','attemptDetailScreen','topicBankScreen','qbankScreen',
-   'leaderboardScreen','dailyChallengeScreen','loginScreen','registerScreen',
-   'jambModeScreen','jambSubjectScreen','jambQuizScreen','jambResultsScreen',
-   'generalUTMEScreen','generalPracticeScreen','adminScreen',
-   'chatScreen','commentsScreen','aiScreen','forgotScreen'
-  ].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-}
+function hideAll(){['splash','subjectSelect','streamSelect','quiz','results','reviewScreen','historyScreen','attemptDetailScreen','topicBankScreen','qbankScreen','leaderboardScreen','dailyChallengeScreen'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});}
 function setThemeToggleVisible(v){const b=document.getElementById('themeToggleBtn');if(b)b.className='theme-toggle'+(v?' ontop':'');}
-
-function showSplash(){
-  isQuizActive=false;
-  hideAll();
-  currentUser=getCurrentUser();
-  if(!currentUser){showLogin();return;}
-  document.getElementById('splash').style.display='flex';
-  document.getElementById('splashWelcome').textContent='Welcome, '+currentUser.name.split(' ')[0]+'! 👋';
-  // Admin button — ONLY show when is_admin is true
-  const adminBtn=document.getElementById('adminBtn');
-  if(adminBtn){
-    adminBtn.style.display=currentUser.is_admin?'':'none';
-  }
-  loadSplashStats();
-  updateCalcFloatBtn();
-  setThemeToggleVisible(true);
-  checkCloudStatus();
-}
-
+function showSplash(){isQuizActive=false;hideAll();document.getElementById('splash').style.display='flex';loadSplashStats();updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showSubjectSelect(){
   if(!getStream()){showStreamSelect();return;}
   hideAll();document.getElementById('subjectSelect').style.display='flex';renderSubjectGrid();updateCalcFloatBtn();setThemeToggleVisible(true);
@@ -2764,16 +2592,6 @@ function showTopicBank(){hideAll();document.getElementById('topicBankScreen').st
 function showQBank(){if(!currentUser||!currentUser.is_admin){alert('⛔ Question Bank is only accessible to the admin.');return;}hideAll();document.getElementById('qbankScreen').style.display='flex';populateQbSubjects();updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showLeaderboard(){hideAll();document.getElementById('leaderboardScreen').style.display='flex';renderLeaderboard('today');updateCalcFloatBtn();setThemeToggleVisible(true);}
 function showDailyChallenge(){hideAll();document.getElementById('dailyChallengeScreen').style.display='flex';renderDailyChallenge();updateCalcFloatBtn();setThemeToggleVisible(true);}
-function showLogin(){hideAll();document.getElementById('loginScreen').style.display='flex';document.getElementById('loginErr').textContent='';}
-function showRegister(){hideAll();document.getElementById('registerScreen').style.display='flex';document.getElementById('registerErr').textContent='';document.getElementById('registerOk').textContent='';}
-function showRSUMode(){showSubjectSelect();}
-function showJAMBMode(){hideAll();document.getElementById('jambModeScreen').style.display='flex';setThemeToggleVisible(true);}
-function showGeneralPostUTME(){hideAll();document.getElementById('generalUTMEScreen').style.display='flex';populateUTMESubjects();setThemeToggleVisible(true);}
-function showGeneralPractice(){hideAll();document.getElementById('generalPracticeScreen').style.display='flex';populateGPSubjects();setThemeToggleVisible(true);}
-function showAdmin(){
-  if(!currentUser||!currentUser.is_admin){alert('⛔ Admin access only.');return;}
-  hideAll();document.getElementById('adminScreen').style.display='flex';setAdminTab('overview');setThemeToggleVisible(true);
-}
 
 function loadSplashStats(){
   const h=getHistory();
@@ -2916,7 +2734,12 @@ function confirmSubmit(){
   if(un>0&&!confirm('You have '+un+' unanswered question(s). Submit anyway?'))return;
   endQuiz(false);
 }
-function _endQuizCoreBase(timeout,antiCheat){
+function _endQuizCore(timeout,antiCheat){
+  if(quizEnded)return;quizEnded=true;isQuizActive=false;
+  clearInterval(timerInterval);
+  if(acTimer){clearInterval(acTimer);acTimer=null;}
+  document.getElementById('antiCheatOverlay').classList.remove('show');
+  const timeUsed=Math.max(0,(_quizStartTime||1800)-timeLeft);
   const ts=Math.floor(timeUsed/60)+'m '+(timeUsed%60)+'s';
   let correct=0,wrong=0,skipped=0;
   const bySub={};
@@ -3287,7 +3110,20 @@ function addSingleQuestion(){
 }
 
 // ===== QUESTION BANK: PASTE & CONVERT =====
-// populateQbSubjects defined later with full JAMB subjects support
+function populateQbSubjects(){
+  const selIds=['qbSubjectSelect','sqSubjectSelect'];
+  const allowed=getStreamSubjects();
+  selIds.forEach(sid=>{
+    const sel=document.getElementById(sid);
+    if(!sel)return;
+    sel.innerHTML='<option value="auto">🔍 Auto-detect</option>';
+    Object.entries(subjectMeta).forEach(([k,m])=>{
+      if(!allowed.includes(k))return;
+      const o=document.createElement('option');o.value=k;o.textContent=m.icon+' '+m.name;sel.appendChild(o);
+    });
+    const o=document.createElement('option');o.value='general';o.textContent='📚 General';sel.appendChild(o);
+  });
+}
 
 // Keyword map for auto-detecting subject from raw text
 const subjectKeywords={
@@ -4107,11 +3943,7 @@ const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 let currentUser=null;
 
 function getCurrentUser(){
-  try{
-    const u=JSON.parse(localStorage.getItem('rsu_user')||'null');
-    if(u){u.is_admin=(u.is_admin===true||u.is_admin==='true'||u.is_admin===1);}
-    return u;
-  }catch(e){return null;}
+  try{return JSON.parse(localStorage.getItem('rsu_user')||'null');}catch(e){return null;}
 }
 function saveCurrentUser(u){
   try{localStorage.setItem('rsu_user',JSON.stringify(u));}catch(e){}
@@ -4121,8 +3953,19 @@ function clearCurrentUser(){
 }
 
 // ============================================================
-// CLOUD QUESTION LOADING (admin-added questions from Supabase)
+// AUTH FUNCTIONS
 // ============================================================
+function showLogin(){
+  hideAll();
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginErr').textContent='';
+}
+function showRegister(){
+  hideAll();
+  document.getElementById('registerScreen').style.display='flex';
+  document.getElementById('registerErr').textContent='';
+  document.getElementById('registerOk').textContent='';
+}
 
 async function doLogin(){
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
@@ -4134,16 +3977,11 @@ async function doLogin(){
   try{
     const {data,error}=await supa.from('users').select('*').eq('email',email).eq('password_hash',pass).single();
     if(error||!data){errEl.textContent='❌ Incorrect email or password.';return;}
-    // Ensure is_admin is a proper boolean (Supabase can return it as string 'true')
-    data.is_admin=(data.is_admin===true||data.is_admin==='true'||data.is_admin===1);
     currentUser=data;
     saveCurrentUser(data);
     errEl.textContent='';
     onLoginSuccess();
-  }catch(e){
-    console.error('Login error:',e);
-    errEl.textContent='❌ Connection error. Try again.';
-  }
+  }catch(e){errEl.textContent='❌ Connection error. Try again.';}
 }
 
 async function doRegister(){
@@ -4176,11 +4014,61 @@ function doLogout(){
 }
 
 function onLoginSuccess(){
-  // Clear any stale cached session flag
-  localStorage.setItem('rsu_session_v','2');
+  // Load any cloud questions into QB
   loadCloudQuestionsIntoQB();
   showSplash();
 }
+
+// ============================================================
+// NAVIGATION — override hideAll to include new screens
+// ============================================================
+function hideAll(){
+  ['splash','subjectSelect','streamSelect','quiz','results','reviewScreen',
+   'historyScreen','attemptDetailScreen','topicBankScreen','qbankScreen',
+   'leaderboardScreen','dailyChallengeScreen','loginScreen','registerScreen',
+   'jambModeScreen','jambSubjectScreen','jambQuizScreen','jambResultsScreen',
+   'generalUTMEScreen','generalPracticeScreen','adminScreen'
+  ].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+}
+function setThemeToggleVisible(v){const b=document.getElementById('themeToggleBtn');if(b)b.className='theme-toggle'+(v?' ontop':'');}
+
+function showSplash(){
+  isQuizActive=false;hideAll();
+  currentUser=getCurrentUser();
+  if(!currentUser){showLogin();return;}
+  document.getElementById('splash').style.display='flex';
+  document.getElementById('splashWelcome').textContent='Welcome, '+currentUser.name.split(' ')[0]+'! 👋';
+  // Admin button: ONLY show for admin users
+  const adminBtn=document.getElementById('adminBtn');
+  if(currentUser.is_admin){
+    adminBtn.style.display='';
+  } else {
+    adminBtn.style.display='none';
+  }
+  loadSplashStats();updateCalcFloatBtn();setThemeToggleVisible(true);
+  checkCloudStatus();
+}
+function showSubjectSelect(){
+  if(!getStream()){showStreamSelect();return;}
+  hideAll();document.getElementById('subjectSelect').style.display='flex';renderSubjectGrid();updateCalcFloatBtn();setThemeToggleVisible(true);
+}
+function showStreamSelect(){hideAll();document.getElementById('streamSelect').style.display='flex';updateCalcFloatBtn();setThemeToggleVisible(true);}
+function setStream(stream){saveStream(stream);showSubjectSelect();}
+function showResults(){isQuizActive=false;hideAll();document.getElementById('results').style.display='flex';updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showReview(){hideAll();document.getElementById('reviewScreen').style.display='flex';renderReview();updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showHistory(){hideAll();document.getElementById('historyScreen').style.display='flex';renderHistory();updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showAttemptDetail(idx){hideAll();document.getElementById('attemptDetailScreen').style.display='flex';renderAttemptDetail(idx);updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showTopicBank(){hideAll();document.getElementById('topicBankScreen').style.display='flex';renderTopicBank();updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showQBank(){if(!currentUser||!currentUser.is_admin){alert('⛔ Question Bank is only accessible to the admin.');return;}hideAll();document.getElementById('qbankScreen').style.display='flex';populateQbSubjects();updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showLeaderboard(){hideAll();document.getElementById('leaderboardScreen').style.display='flex';renderLeaderboard('today');updateCalcFloatBtn();setThemeToggleVisible(true);}
+function showDailyChallenge(){hideAll();document.getElementById('dailyChallengeScreen').style.display='flex';renderDailyChallenge();updateCalcFloatBtn();setThemeToggleVisible(true);}
+
+// Mode screens
+function showRSUMode(){showSubjectSelect();}
+function showJAMBMode(){hideAll();document.getElementById('jambModeScreen').style.display='flex';setThemeToggleVisible(true);}
+function showGeneralPostUTME(){hideAll();document.getElementById('generalUTMEScreen').style.display='flex';populateUTMESubjects();setThemeToggleVisible(true);}
+function showGeneralPractice(){hideAll();document.getElementById('generalPracticeScreen').style.display='flex';populateGPSubjects();setThemeToggleVisible(true);}
+function showAdmin(){hideAll();document.getElementById('adminScreen').style.display='flex';setAdminTab('overview');setThemeToggleVisible(true);}
 
 // ============================================================
 // CLOUD QUESTION LOADING (admin-added questions from Supabase)
@@ -4737,7 +4625,15 @@ function beginQuiz(customTime){
 // ============================================================
 let adminCurrentTab='overview';
 
-// setAdminTab defined later with full tab support including allquestions
+function setAdminTab(tab){
+  adminCurrentTab=tab;
+  document.querySelectorAll('.admin-tab').forEach((el,i)=>{
+    const tabs=['overview','users','addq','bulkq','questions','attempts'];
+    el.className='admin-tab'+(tabs[i]===tab?' active':'');
+  });
+  if(tab==='bulkq'){renderAdminBulkParser();}
+  else{renderAdminTab(tab);}
+}
 
 async function renderAdminTab(tab){
   const body=document.getElementById('adminBody');
@@ -4931,14 +4827,6 @@ function populateQbSubjects(){
 // ============================================================
 loadCustomQuestionsIntoQB();
 
-// Force re-login if cached session is from old version (before is_admin was properly stored)
-const _sessionVersion=localStorage.getItem('rsu_session_v');
-if(_sessionVersion!=='2'){
-  // Old session — clear it so user logs in fresh and gets is_admin from Supabase
-  clearCurrentUser();
-  localStorage.setItem('rsu_session_v','2');
-}
-
 // Check if already logged in
 currentUser=getCurrentUser();
 if(currentUser){
@@ -4947,771 +4835,6 @@ if(currentUser){
 } else {
   showLogin();
 }
-
-// ============================================================
-// NAVIGATION — new screens
-// ============================================================
-function showChat(){hideAll();document.getElementById('chatScreen').style.display='flex';setThemeToggleVisible(false);showChatTab('group');loadGroupMessages();}
-function showComments(){hideAll();document.getElementById('commentsScreen').style.display='flex';setThemeToggleVisible(true);loadComments('general');}
-function showAI(){hideAll();document.getElementById('aiScreen').style.display='flex';setThemeToggleVisible(true);initAIChat();}
-function showForgot(){hideAll();document.getElementById('forgotScreen').style.display='flex';document.getElementById('forgotErr1').textContent='';document.getElementById('forgotStep1').style.display='block';document.getElementById('forgotStep2').style.display='none';}
-
-// ============================================================
-// FORGOT PASSWORD
-// ============================================================
-let _forgotUserEmail='';
-
-async function forgotStep1(){
-  const email=document.getElementById('forgotEmail').value.trim().toLowerCase();
-  const err=document.getElementById('forgotErr1');
-  if(!email){err.textContent='Please enter your email.';return;}
-  err.textContent='Searching...';
-  try{
-    const {data,error}=await supa.from('users').select('email,security_question').eq('email',email).single();
-    if(error||!data||!data.security_question){
-      err.textContent='❌ Email not found or no security question set.';return;
-    }
-    _forgotUserEmail=email;
-    document.getElementById('forgotQuestion').textContent=data.security_question;
-    document.getElementById('forgotStep1').style.display='none';
-    document.getElementById('forgotStep2').style.display='block';
-    err.textContent='';
-  }catch(e){err.textContent='❌ Connection error.';}
-}
-
-async function forgotStep2(){
-  const answer=document.getElementById('forgotAnswer').value.trim().toLowerCase();
-  const newPass=document.getElementById('forgotNewPass').value.trim();
-  const err=document.getElementById('forgotErr2');
-  const ok=document.getElementById('forgotOk2');
-  if(!answer||!newPass){err.textContent='Please fill in all fields.';return;}
-  if(newPass.length<6){err.textContent='Password must be at least 6 characters.';return;}
-  err.textContent='Verifying...';
-  try{
-    const {data}=await supa.from('users').select('security_answer').eq('email',_forgotUserEmail).single();
-    if(!data||data.security_answer.toLowerCase().trim()!==answer){
-      err.textContent='❌ Wrong answer. Try again.';return;
-    }
-    const {error}=await supa.from('users').update({password_hash:newPass}).eq('email',_forgotUserEmail);
-    if(error){err.textContent='❌ Update failed: '+error.message;return;}
-    err.textContent='';
-    ok.textContent='✅ Password reset! You can now sign in.';
-    setTimeout(()=>showLogin(),2000);
-  }catch(e){err.textContent='❌ Connection error.';}
-}
-
-// ============================================================
-// REGISTER — include security question
-// ============================================================
-async function doRegister(){
-  const name=document.getElementById('regName').value.trim();
-  const email=document.getElementById('regEmail').value.trim().toLowerCase();
-  const phone=document.getElementById('regPhone').value.trim();
-  const pass=document.getElementById('regPassword').value.trim();
-  const secQ=document.getElementById('regSecQ').value.trim();
-  const secA=document.getElementById('regSecA').value.trim().toLowerCase();
-  const errEl=document.getElementById('registerErr');
-  const okEl=document.getElementById('registerOk');
-  errEl.textContent='';okEl.textContent='';
-  if(!name||!email||!phone||!pass){errEl.textContent='Please fill in all fields.';return;}
-  if(!secQ||!secA){errEl.textContent='Please choose a security question and provide an answer.';return;}
-  if(pass.length<6){errEl.textContent='Password must be at least 6 characters.';return;}
-  errEl.textContent='Creating account...';
-  try{
-    const {data:existing}=await supa.from('users').select('id').eq('email',email).maybeSingle();
-    if(existing){errEl.textContent='❌ Email already registered.';return;}
-    const {data,error}=await supa.from('users').insert([{name,email,phone,password_hash:pass,is_admin:false,security_question:secQ,security_answer:secA}]).select().single();
-    if(error){errEl.textContent='❌ Registration failed: '+error.message;return;}
-    errEl.textContent='';
-    okEl.textContent='✅ Account created! Signing you in...';
-    data.is_admin=false;
-    currentUser=data;saveCurrentUser(data);
-    setTimeout(()=>onLoginSuccess(),1000);
-  }catch(e){errEl.textContent='❌ Connection error.';}
-}
-
-// ============================================================
-// GROUP CHAT
-// ============================================================
-let chatRealtimeChannel=null;
-let currentChatTopic='group';
-let currentDMUser=null;
-
-function showChatTab(tab){
-  // Update tab highlights
-  document.getElementById('chatTabGroup').className='admin-tab'+(tab==='group'?' active':'');
-  document.getElementById('chatTabDM').className='admin-tab'+(tab==='dm'?' active':'');
-  document.getElementById('chatTabUsers').className='admin-tab'+(tab==='users'?' active':'');
-  // Show/hide panels
-  document.getElementById('chatGroupPanel').style.display=tab==='group'?'flex':'none';
-  document.getElementById('chatDMPanel').style.display=tab==='dm'?'flex':'none';
-  document.getElementById('chatUsersPanel').style.display=tab==='users'?'block':'none';
-  currentChatTopic=tab;
-  if(tab==='group') loadGroupMessages();
-  if(tab==='dm'){loadDMUsers();if(currentDMUser)loadDMMessages(currentDMUser);}
-  if(tab==='users') loadChatUsers();
-}
-
-async function loadGroupMessages(){
-  const container=document.getElementById('chatGroupMessages');
-  container.innerHTML='<div style="text-align:center;color:#666;font-size:0.8rem;padding:30px;">⏳ Loading messages...</div>';
-  try{
-    const {data,error}=await supa.from('messages')
-      .select('*')
-      .eq('is_group',true)
-      .order('created_at',{ascending:true})
-      .limit(100);
-    if(error) throw error;
-    renderGroupMessages(data||[]);
-    // Real-time subscription
-    if(chatRealtimeChannel){
-      try{supa.removeChannel(chatRealtimeChannel);}catch(e){}
-    }
-    chatRealtimeChannel=supa.channel('group_chat_live')
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},(payload)=>{
-        if(payload.new&&payload.new.is_group) appendGroupMessage(payload.new,true);
-      }).subscribe();
-  }catch(e){
-    console.error('Load group messages error:',e);
-    container.innerHTML='<div style="color:var(--wrong);padding:20px;text-align:center;">❌ Could not load messages.<br><span style="font-size:0.75rem;color:#888;">Make sure you ran the SQL query to create the messages table.</span></div>';
-  }
-}
-
-function renderGroupMessages(messages){
-  const container=document.getElementById('chatGroupMessages');
-  container.innerHTML='';
-  if(!messages.length){
-    container.innerHTML='<div style="text-align:center;color:#666;font-size:0.85rem;padding:50px 20px;">No messages yet 💬<br><span style="font-size:0.75rem;">Be the first to say hello!</span></div>';
-    return;
-  }
-  messages.forEach(m=>appendGroupMessage(m,false));
-  setTimeout(()=>{container.scrollTop=container.scrollHeight;},100);
-}
-
-function appendGroupMessage(m,scroll){
-  const container=document.getElementById('chatGroupMessages');
-  if(!container||!m)return;
-  const isMe=currentUser&&(m.sender_name===currentUser.name||m.sender_id===currentUser.id);
-  const time=m.created_at?new Date(m.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'}):'';
-  const name=(m.sender_name||'User');
-  const initials=name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
-  const safeContent=(m.content||'').replace(/</g,'&lt;').replace(/\n/g,'<br>');
-  const div=document.createElement('div');
-  div.className='chat-row '+(isMe?'mine':'theirs');
-  div.style.marginBottom='6px';
-  if(isMe){
-    div.innerHTML='<div class="chat-bubble mine">'+safeContent+'<div class="chat-time">'+time+'</div></div>';
-  } else {
-    div.innerHTML='<div style="display:flex;align-items:flex-end;gap:6px;">'
-      +'<div class="dm-avatar" style="width:30px;height:30px;font-size:0.65rem;flex-shrink:0;">'+initials+'</div>'
-      +'<div class="chat-bubble theirs"><div class="chat-name">'+name+'</div>'+safeContent+'<div class="chat-time">'+time+'</div></div>'
-      +'</div>';
-  }
-  container.appendChild(div);
-  if(scroll) setTimeout(()=>{container.scrollTop=container.scrollHeight;},50);
-}
-
-async function sendGroupMessage(){
-  if(!currentUser){alert('Please log in to send messages.');return;}
-  const input=document.getElementById('chatGroupInput');
-  const text=(input.value||'').trim();
-  if(!text) return;
-  input.value='';
-  input.style.height='auto';
-  try{
-    const {error}=await supa.from('messages').insert([{
-      sender_id:currentUser.id,
-      sender_name:currentUser.name,
-      content:text,
-      is_group:true,
-      group_name:'general'
-    }]);
-    if(error) throw error;
-    // Optimistically show own message immediately
-    appendGroupMessage({
-      sender_id:currentUser.id,
-      sender_name:currentUser.name,
-      content:text,
-      is_group:true,
-      created_at:new Date().toISOString()
-    },true);
-  }catch(e){
-    console.error('Send message error:',e);
-    alert('Could not send message. Error: '+(e.message||'Unknown'));
-  }
-}
-
-// ============================================================
-// DIRECT MESSAGES
-// ============================================================
-async function loadDMUsers(){
-  if(!currentUser) return;
-  const list=document.getElementById('dmUserList');
-  const pick=document.getElementById('dmPickUser');
-  const conv=document.getElementById('dmConversation');
-  list.innerHTML='<div style="color:#666;font-size:0.8rem;">Loading users...</div>';
-  if(!currentDMUser){
-    pick.style.display='block';
-    conv.style.display='none';
-    document.getElementById('dmInputRow').style.display='none';
-  }
-  try{
-    const {data,error}=await supa.from('users').select('id,name,email').neq('id',currentUser.id).order('name');
-    if(error) throw error;
-    list.innerHTML='';
-    const users=data||[];
-    if(!users.length){
-      list.innerHTML='<div style="color:#888;font-size:0.82rem;text-align:center;padding:20px;">No other users registered yet.</div>';
-      return;
-    }
-    users.forEach(u=>{
-      const initials=u.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-      const card=document.createElement('div');
-      card.className='dm-user-card';
-      card.innerHTML='<div class="dm-avatar">'+initials+'</div>'
-        +'<div><div style="font-weight:700;font-size:0.85rem;">'+u.name+'</div>'
-        +'<div style="font-size:0.7rem;color:#888;">'+u.email+'</div></div>'
-        +'<div style="margin-left:auto;color:var(--gold);font-size:0.75rem;">Chat →</div>';
-      card.onclick=()=>openDM(u);
-      list.appendChild(card);
-    });
-  }catch(e){
-    list.innerHTML='<div style="color:var(--wrong);font-size:0.8rem;">Could not load users.</div>';
-  }
-}
-
-function openDM(user){
-  currentDMUser=user;
-  const pick=document.getElementById('dmPickUser');
-  const conv=document.getElementById('dmConversation');
-  const inputRow=document.getElementById('dmInputRow');
-  pick.style.display='none';
-  conv.style.display='flex';
-  conv.style.flexDirection='column';
-  conv.style.flex='1';
-  conv.style.overflowY='auto';
-  conv.style.padding='12px';
-  conv.style.gap='8px';
-  inputRow.style.display='flex';
-  loadDMMessages(user);
-}
-
-async function loadDMMessages(user){
-  if(!currentUser||!user) return;
-  const container=document.getElementById('dmConversation');
-  container.innerHTML='<div style="text-align:center;color:#666;font-size:0.8rem;padding:20px;">Loading...</div>';
-  try{
-    // Load messages between these two users
-    const {data,error}=await supa.from('messages')
-      .select('*')
-      .eq('is_group',false)
-      .or('and(sender_id.eq.'+currentUser.id+',receiver_id.eq.'+user.id+'),and(sender_id.eq.'+user.id+',receiver_id.eq.'+currentUser.id+')')
-      .order('created_at',{ascending:true})
-      .limit(100);
-    if(error) throw error;
-    container.innerHTML='';
-    const messages=data||[];
-    if(!messages.length){
-      container.innerHTML='<div style="text-align:center;color:#666;font-size:0.85rem;padding:40px 20px;">Start a conversation with <b>'+user.name+'</b>! 💬</div>';
-      return;
-    }
-    messages.forEach(m=>{
-      const isMe=m.sender_id===currentUser.id;
-      const time=new Date(m.created_at).toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'});
-      const safeContent=(m.content||'').replace(/</g,'&lt;').replace(/\n/g,'<br>');
-      const div=document.createElement('div');
-      div.className='chat-row '+(isMe?'mine':'theirs');
-      div.style.marginBottom='6px';
-      if(isMe){
-        div.innerHTML='<div class="chat-bubble mine">'+safeContent+'<div class="chat-time">'+time+'</div></div>';
-      } else {
-        const initials=m.sender_name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-        div.innerHTML='<div style="display:flex;align-items:flex-end;gap:6px;">'
-          +'<div class="dm-avatar" style="width:30px;height:30px;font-size:0.65rem;flex-shrink:0;">'+initials+'</div>'
-          +'<div class="chat-bubble theirs"><div class="chat-name">'+m.sender_name+'</div>'+safeContent+'<div class="chat-time">'+time+'</div></div>'
-          +'</div>';
-      }
-      container.appendChild(div);
-    });
-    setTimeout(()=>{container.scrollTop=container.scrollHeight;},100);
-  }catch(e){
-    container.innerHTML='<div style="color:var(--wrong);padding:20px;text-align:center;">Could not load messages.</div>';
-  }
-}
-
-async function sendDM(){
-  if(!currentUser||!currentDMUser){alert('Please select a user first.');return;}
-  const input=document.getElementById('chatDMInput');
-  const text=(input.value||'').trim();
-  if(!text) return;
-  input.value='';
-  input.style.height='auto';
-  try{
-    const {error}=await supa.from('messages').insert([{
-      sender_id:currentUser.id,
-      sender_name:currentUser.name,
-      receiver_id:currentDMUser.id,
-      receiver_name:currentDMUser.name,
-      content:text,
-      is_group:false
-    }]);
-    if(error) throw error;
-    loadDMMessages(currentDMUser);
-  }catch(e){
-    alert('Could not send message: '+(e.message||'Unknown error'));
-  }
-}
-
-async function loadChatUsers(){
-  if(!currentUser) return;
-  const list=document.getElementById('chatUsersList');
-  list.innerHTML='<div style="color:#666;font-size:0.8rem;">Loading users...</div>';
-  try{
-    const {data,error}=await supa.from('users').select('id,name,email,created_at').order('name');
-    if(error) throw error;
-    const users=data||[];
-    list.innerHTML='<div style="color:var(--gold);font-size:0.75rem;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">👥 '+users.length+' Registered Users</div>';
-    users.forEach(u=>{
-      const initials=u.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-      const dt=new Date(u.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});
-      const isMe=u.id===currentUser.id;
-      const card=document.createElement('div');
-      card.className='dm-user-card';
-      card.innerHTML='<div class="dm-avatar" style="'+(isMe?'background:linear-gradient(135deg,var(--gold),#ff6b6b);':'')+'">'+initials+'</div>'
-        +'<div><div style="font-weight:700;font-size:0.85rem;color:'+(isMe?'var(--gold)':'var(--white)')+';">'+u.name+(isMe?' (You)':'')+'</div>'
-        +'<div style="font-size:0.68rem;color:#888;">Joined '+dt+'</div></div>'
-        +(isMe?'':'<div style="margin-left:auto;color:var(--gold);font-size:0.75rem;">Message →</div>');
-      if(!isMe) card.onclick=()=>{showChatTab('dm');openDM(u);};
-      list.appendChild(card);
-    });
-  }catch(e){
-    list.innerHTML='<div style="color:var(--wrong);">Could not load users.</div>';
-  }
-}
-
-// ============================================================
-// COMMENTS / DISCUSSION BOARD
-// ============================================================
-async function loadComments(topic){
-  currentCommentTopic=topic;
-  // Update tab highlights
-  document.querySelectorAll('#commentsScreen .lb-tab-btn').forEach(btn=>{
-    const onclick=btn.getAttribute('onclick')||'';
-    btn.className='lb-tab-btn'+(onclick.includes("'"+topic+"'")?' active':'');
-  });
-  const body=document.getElementById('commentsBody');
-  body.innerHTML='<div style="text-align:center;color:#666;padding:30px;">⏳ Loading discussions...</div>';
-  try{
-    const {data,error}=await supa.from('comments')
-      .select('*')
-      .eq('topic',topic)
-      .is('parent_id',null)
-      .order('created_at',{ascending:false})
-      .limit(30);
-    if(error) throw error;
-    const comments=data||[];
-    if(!comments.length){
-      body.innerHTML='<div style="text-align:center;color:#666;padding:40px;font-size:0.85rem;">No posts yet in this topic.<br>Be the first to post! ✍️</div>';
-      return;
-    }
-    body.innerHTML='';
-    // Load replies for each comment
-    for(const c of comments){
-      const {data:replies}=await supa.from('comments')
-        .select('*')
-        .eq('parent_id',c.id)
-        .order('created_at',{ascending:true});
-      body.appendChild(buildCommentCard(c,replies||[]));
-    }
-  }catch(e){
-    console.error('Load comments error:',e);
-    body.innerHTML='<div style="color:var(--wrong);padding:20px;text-align:center;">❌ Could not load discussions.<br><span style="font-size:0.75rem;color:#888;">Make sure the comments table was created in Supabase.</span></div>';
-  }
-}
-
-function buildCommentCard(c,replies){
-  const div=document.createElement('div');
-  div.className='comment-card';
-  const initials=c.user_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-  const time=new Date(c.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-  const isAdmin=currentUser?.is_admin;
-  div.innerHTML=`
-    <div class="comment-header">
-      <div class="comment-avatar">${initials}</div>
-      <div><div class="comment-author">${c.user_name}</div><div class="comment-time">${time}</div></div>
-      ${isAdmin||c.user_name===currentUser?.name?`<button onclick="deleteComment('${c.id}')" style="margin-left:auto;background:none;border:none;color:#dc3545;cursor:pointer;font-size:0.75rem;">🗑</button>`:''}
-    </div>
-    <div class="comment-text">${c.content}</div>
-    <div class="comment-actions">
-      <button class="comment-btn" onclick="toggleReplyBox('${c.id}')">💬 Reply (${replies.length})</button>
-      <button class="comment-btn" onclick="likeComment('${c.id}',this)">❤️ ${c.likes||0}</button>
-    </div>
-    <div id="replies_${c.id}" style="display:none;margin-top:8px;">
-      ${replies.map(r=>{
-        const ri=r.user_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-        const rt=new Date(r.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-        return `<div class="reply-card"><div style="font-size:0.72rem;font-weight:700;color:var(--gold);">${r.user_name} · <span style="color:#666;font-weight:400;">${rt}</span></div><div style="font-size:0.82rem;margin-top:4px;">${r.content}</div></div>`;
-      }).join('')}
-      <div class="reply-box" style="margin-top:8px;">
-        <textarea id="replyInput_${c.id}" placeholder="Write a reply..." style="width:100%;background:var(--input-bg);border:1px solid #444;color:var(--text);border-radius:8px;padding:8px;font-size:0.8rem;font-family:inherit;resize:none;outline:none;" rows="2"></textarea>
-        <button onclick="postReply('${c.id}')" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:6px 16px;font-weight:700;cursor:pointer;margin-top:6px;font-size:0.78rem;">Reply ➤</button>
-      </div>
-    </div>`;
-  return div;
-}
-
-function toggleReplyBox(id){
-  const el=document.getElementById('replies_'+id);
-  el.style.display=el.style.display==='none'?'block':'none';
-}
-
-async function postComment(){
-  const input=document.getElementById('newCommentInput');
-  const text=input.value.trim();
-  if(!text||!currentUser)return;
-  if(text.length<3){alert('Comment is too short.');return;}
-  try{
-    await supa.from('comments').insert([{user_id:currentUser.id,user_name:currentUser.name,content:text,topic:currentCommentTopic,parent_id:null}]);
-    input.value='';
-    loadComments(currentCommentTopic);
-  }catch(e){alert('Could not post comment.');}
-}
-
-async function postReply(parentId){
-  const input=document.getElementById('replyInput_'+parentId);
-  const text=input.value.trim();
-  if(!text||!currentUser)return;
-  try{
-    await supa.from('comments').insert([{user_id:currentUser.id,user_name:currentUser.name,content:text,topic:currentCommentTopic,parent_id:parentId}]);
-    loadComments(currentCommentTopic);
-  }catch(e){alert('Could not post reply.');}
-}
-
-async function likeComment(id,btn){
-  try{
-    const {data}=await supa.from('comments').select('likes').eq('id',id).single();
-    const newLikes=(data?.likes||0)+1;
-    await supa.from('comments').update({likes:newLikes}).eq('id',id);
-    btn.textContent='❤️ '+newLikes;
-  }catch(e){}
-}
-
-async function deleteComment(id){
-  if(!confirm('Delete this post and all its replies?'))return;
-  try{await supa.from('comments').delete().eq('id',id);loadComments(currentCommentTopic);}catch(e){}
-}
-
-// ============================================================
-// AI STUDY ASSISTANT
-// ============================================================
-const AI_SYSTEM_PROMPT=`You are a brilliant, friendly study assistant for Nigerian students preparing for JAMB and RSU (Rivers State University) Post UTME exams. You know all JAMB subjects thoroughly: Mathematics, English, Biology, Chemistry, Physics, Literature, Government, CRS, Economics, Geography, History and more. You give clear, concise explanations. When solving problems, show step-by-step working. Use Nigerian examples where relevant. You can explain difficult concepts simply, create practice questions, and give exam tips. Always be encouraging and supportive. Keep responses concise and mobile-friendly.`;
-
-let aiHistory=[];
-
-function initAIChat(){
-  const msgs=document.getElementById('aiMessages');
-  if(msgs.children.length>0)return; // already initialised
-  aiHistory=[];
-  const welcome=document.createElement('div');
-  welcome.style.cssText='display:flex;flex-direction:column;gap:0;';
-  welcome.innerHTML=`<div class="ai-bubble assistant">
-    <div class="ai-label">🤖 AI Study Assistant</div>
-    <div>Hello ${currentUser?.name?.split(' ')[0]||'there'}! 👋 I'm your personal study assistant for JAMB and RSU Post UTME.<br><br>
-    I can help you with:<br>
-    📚 <b>Explain any topic</b> — Biology, Maths, Chemistry, Physics...<br>
-    ✏️ <b>Solve past questions</b> — show me a question<br>
-    📝 <b>Create practice questions</b> — just ask<br>
-    💡 <b>Exam tips & strategies</b><br><br>
-    What would you like to study today?</div>
-  </div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
-    ${['Explain photosynthesis','Solve: 2x²-8=0','JAMB Maths tips','What is osmosis?','Government: Federalism','English: figures of speech'].map(s=>`<button onclick="quickAsk('${s}')" style="background:rgba(255,215,0,0.1);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">${s}</button>`).join('')}
-  </div>`;
-  msgs.appendChild(welcome);
-}
-
-function quickAsk(text){
-  document.getElementById('aiInput').value=text;
-  askAI();
-}
-
-async function askAI(){
-  const input=document.getElementById('aiInput');
-  const text=input.value.trim();
-  if(!text)return;
-  input.value='';input.style.height='auto';
-  const msgs=document.getElementById('aiMessages');
-  const sendBtn=document.getElementById('aiSendBtn');
-  sendBtn.disabled=true;sendBtn.textContent='⏳';
-
-  // Add user message bubble
-  const userDiv=document.createElement('div');
-  userDiv.style.cssText='display:flex;justify-content:flex-end;margin-bottom:6px;';
-  userDiv.innerHTML='<div class="ai-bubble user">'+text.replace(/</g,'&lt;')+'</div>';
-  msgs.appendChild(userDiv);
-
-  // Add typing indicator
-  const typingDiv=document.createElement('div');
-  typingDiv.style.cssText='display:flex;margin-bottom:6px;';
-  typingDiv.innerHTML='<div class="ai-bubble assistant"><div class="ai-label">🤖 Thinking...</div><div class="ai-typing"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div></div>';
-  msgs.appendChild(typingDiv);
-  msgs.scrollTop=msgs.scrollHeight;
-
-  aiHistory.push({role:'user',content:text});
-  if(aiHistory.length>20) aiHistory=aiHistory.slice(-20);
-
-  // Use smart built-in study helper (works 100% offline, no CORS issues)
-  const reply=getBuiltInAIResponse(text);
-  aiHistory.push({role:'assistant',content:reply});
-  const formatted=reply.replace(/</g,'&lt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code style="background:rgba(255,255,255,0.1);padding:2px 5px;border-radius:3px;font-size:0.85em;">$1</code>');
-  typingDiv.innerHTML='<div class="ai-bubble assistant"><div class="ai-label">🤖 AI Study Assistant</div><div>'+formatted+'</div></div>';
-
-  msgs.scrollTop=msgs.scrollHeight;
-  sendBtn.disabled=false;sendBtn.textContent='🚀';
-}
-
-function getBuiltInAIResponse(question){
-  const q=question.toLowerCase();
-
-  if(q.includes('osmosis'))
-    return '**Osmosis** 🧬\n\nOsmosis is the movement of **water molecules** from a region of higher water potential (dilute solution) to lower water potential (concentrated solution) through a **selectively permeable membrane**.\n\n**Key Points:**\n• Passive process — no energy needed\n• Only water moves, not solutes\n• Important in plant root absorption and kidney function\n\n**Example:** A red blood cell in pure water swells and bursts because water enters by osmosis.';
-
-  if(q.includes('photosynthesis'))
-    return '**Photosynthesis** 🌿\n\n**Equation:**\n6CO₂ + 6H₂O + Light → C₆H₁₂O₆ + 6O₂\n\n**Where:** Chloroplasts (green parts of plants)\n\n**Two Stages:**\n1. Light reactions — occur in thylakoid membrane, produce ATP and NADPH\n2. Calvin Cycle (dark reactions) — occurs in stroma, fixes CO₂ into glucose\n\n**Limiting factors:** Light intensity, CO₂ concentration, Temperature\n\n**JAMB Tip:** Know the equation, location, and limiting factors!';
-
-  if((q.includes('2x')&&q.includes('8'))||(q.includes('solve')&&q.includes('x'))){
-    if(q.includes('2x²')||q.includes('2x^2')||q.includes('2x2'))
-      return '**Solving 2x² − 8 = 0**\n\nStep 1: Move constant\n2x² = 8\n\nStep 2: Divide by 2\nx² = 4\n\nStep 3: Square root both sides\nx = ±√4\n\n**Answer: x = +2 or x = −2** ✅\n\n**Check:** 2(2)² − 8 = 8 − 8 = 0 ✓';
-    return '**Solving Equations** 📐\n\nGeneral steps:\n1. Collect like terms\n2. Isolate the variable\n3. For quadratics use: x = (−b ± √(b²−4ac)) / 2a\n\nType the full equation and I will solve it step by step!';
-  }
-
-  if(q.includes('food')||q.includes('nutrient'))
-    return '**Classes of Food** 🍎\n\n1. **Carbohydrates** — Energy (rice, yam, bread, cassava)\n2. **Proteins** — Growth & repair (beans, meat, fish, eggs)\n3. **Fats & Oils** — Stored energy (palm oil, groundnut, butter)\n4. **Vitamins** — Body regulation (fruits, vegetables)\n5. **Minerals** — e.g. Ca for bones, Fe for blood (milk, liver)\n6. **Water** — Transport, cooling, reactions\n7. **Roughage/Fibre** — Aids digestion (vegetables, whole grain)\n\n**JAMB Tip:** Know deficiency diseases! e.g. Vitamin C → Scurvy, Vitamin D → Rickets, Iron → Anaemia';
-
-  if(q.includes('newton')||q.includes('force')&&q.includes('motion'))
-    return '**Newton\'s Laws of Motion** ⚡\n\n**1st Law (Inertia):**\nA body stays at rest or uniform motion unless an external force acts on it.\n\n**2nd Law:**\nF = ma (Force = mass × acceleration)\nUnit of force = Newton (N)\n\n**3rd Law (Action-Reaction):**\nFor every action there is an equal and opposite reaction.\n\n**Example:** Rocket propulsion — gas pushed backward (action), rocket moves forward (reaction)\n\n**JAMB Tip:** F = ma is the most tested formula in mechanics!';
-
-  if(q.includes('federalism')||q.includes('government')&&q.includes('nigeria'))
-    return '**Nigerian Federalism** ⚖️\n\nFederalism divides power between the **Federal Government** and **36 State Governments** + FCT.\n\n**Three Lists:**\n• **Exclusive List** — Federal only (defence, currency, immigration)\n• **Concurrent List** — Both Federal and State (education, health)\n• **Residual List** — States only (chieftaincy, local customs)\n\n**Nigeria\'s 1999 Constitution** establishes:\n• National Assembly (Senate 109 + House of Reps 360)\n• Executive President (2 terms of 4 years max)\n• Independent Judiciary headed by Chief Justice\n\n**JAMB Tip:** Know the three tiers: Federal → State → Local Government';
-
-  if(q.includes('figure')||q.includes('speech')||(q.includes('simile')||q.includes('metaphor')))
-    return '**Figures of Speech** 📝\n\n**Simile:** Comparison using "like" or "as"\n→ "Brave *as* a lion"\n\n**Metaphor:** Direct comparison, no like/as\n→ "Life is a journey"\n\n**Personification:** Human qualities to non-human things\n→ "The wind *whispered*"\n\n**Hyperbole:** Exaggeration\n→ "I have told you a million times!"\n\n**Alliteration:** Same initial consonant sounds\n→ "Peter Piper picked..."\n\n**Onomatopoeia:** Word sounds like its meaning\n→ buzz, clang, hiss, splash\n\n**Irony:** Saying the opposite of what you mean\n→ "What lovely weather!" (during a storm)';
-
-  if(q.includes('cell'))
-    return '**The Cell** 🔬\n\n**Two main types:**\n• Prokaryotic (no nucleus — bacteria)\n• Eukaryotic (has nucleus — plants, animals, fungi)\n\n**Key Organelles:**\n• **Nucleus** — control centre, contains DNA\n• **Mitochondria** — powerhouse, produces ATP\n• **Ribosome** — protein synthesis\n• **Cell membrane** — controls what enters/exits\n• **Chloroplast** — photosynthesis (plants only)\n• **Cell wall** — rigid support (plants, fungi only)\n• **Vacuole** — storage (large in plants, small in animals)\n\n**JAMB Tip:** The mitochondria = energy; Ribosome = protein; Nucleus = control — these 3 come up every year!';
-
-  if(q.includes('jamb')&&(q.includes('tip')||q.includes('pass')||q.includes('score')))
-    return '**JAMB Exam Tips** 🎯\n\n**Time Management:**\n• 180 questions in 2hrs 30min = 50 seconds per question\n• Never spend more than 1 minute on a single question\n\n**Strategy:**\n1. Start with your strongest subject\n2. Answer easy questions first, mark hard ones\n3. Use elimination — rule out obviously wrong options\n4. Never leave blank — no negative marking in JAMB!\n\n**Score Targets:**\n• 200+ for most federal universities\n• 250+ for Medicine, Law, Engineering\n• 300+ is excellent (top 5%)\n\n**English (60 questions):**\n• Read comprehension passages carefully\n• Know figures of speech, tenses, prepositions\n• Vocabulary is worth 10+ marks\n\n**Study Plan:** 3 hours daily, past questions 2015-2023, focus on weak subjects!';
-
-  if(q.includes('rsu')||q.includes('rivers state university'))
-    return '**Rivers State University (RSU)** 🏛️\n\nLocated in **Port Harcourt, Rivers State, Nigeria**.\n\nFormerly known as **Rivers State University of Science and Technology (RSUST)**.\n\n**Post UTME:**\n• Usually 50 questions in 30 minutes\n• Subjects based on your course\n• Score is combined with JAMB for admission\n\n**Popular Courses:**\nMedicine, Engineering, Law, Sciences, Social Sciences, Management Sciences\n\n**Admission Formula:**\nJAMB score + Post UTME score (weighted) = Final score\n\n**Tip:** Score 60%+ in Post UTME to be competitive for most courses!';
-
-  // Maths topics
-  if(q.includes('logarithm')||q.includes('log'))
-    return '**Logarithms** 📊\n\nlog_b(x) = y means b^y = x\n\n**Key Rules:**\n• log(AB) = log A + log B\n• log(A/B) = log A − log B\n• log(Aⁿ) = n·log A\n• log_b(b) = 1\n• log_b(1) = 0\n\n**Common values:**\n• log₁₀(10) = 1\n• log₁₀(100) = 2\n• log₁₀(1000) = 3\n• log₂(8) = 3 (because 2³=8)\n\n**JAMB Tip:** Most log questions use log₁₀. Remember: log(2)≈0.3010, log(3)≈0.4771';
-
-  if(q.includes('probability'))
-    return '**Probability** 🎲\n\nP(event) = Number of favourable outcomes / Total possible outcomes\n\n**Range:** 0 ≤ P(event) ≤ 1\n\n**Rules:**\n• P(A or B) = P(A) + P(B) − P(A and B)\n• P(A and B) = P(A) × P(B) [if independent]\n• P(not A) = 1 − P(A)\n\n**Examples:**\n• P(Head on a coin) = 1/2\n• P(6 on a die) = 1/6\n• P(Red card from deck) = 26/52 = 1/2\n\n**JAMB Tip:** Draw a possibility space or tree diagram for combined events!';
-
-  // Chemistry
-  if(q.includes('acid')||q.includes('base')||q.includes('ph'))
-    return '**Acids, Bases and pH** ⚗️\n\n**Acids:** pH < 7, taste sour, turn litmus red\nExamples: HCl, H₂SO₄, HNO₃, ethanoic acid\n\n**Bases:** pH > 7, taste bitter, turn litmus blue\nExamples: NaOH, KOH, Ca(OH)₂, NH₃\n\n**Neutral:** pH = 7 (pure water)\n\n**pH Formula:** pH = −log[H⁺]\n\n**Neutralisation:**\nAcid + Base → Salt + Water\n\n**Indicators:**\n• Litmus: red in acid, blue in base\n• Phenolphthalein: colourless in acid, pink in base\n• Methyl orange: red in acid, yellow in base\n\n**JAMB Tip:** Know pH values, indicators and neutralisation reactions!';
-
-  // Default
-  return '**Study Assistant** 📚\n\nYou asked: "'+question+'"\n\nI can explain topics in:\n\n🧬 **Biology** — cells, genetics, photosynthesis, ecology\n⚗️ **Chemistry** — atoms, reactions, acids/bases, organic chemistry\n⚡ **Physics** — forces, waves, electricity, optics\n🔢 **Mathematics** — algebra, calculus, statistics, geometry\n📝 **English** — grammar, figures of speech, comprehension\n⚖️ **Government** — federalism, democracy, Nigerian constitution\n✝️ **CRS** — Old/New Testament, Christian values\n📖 **Literature** — poems, plays, novels, literary devices\n💹 **Economics** — supply/demand, trade, development\n\nAsk me something specific like:\n• "Explain meiosis"\n• "What is Boyle\'s Law?"\n• "Solve: x² + 5x + 6 = 0"\n• "JAMB Chemistry tips"';
-}
-
-// ============================================================
-// ADMIN — ALL QUESTIONS (built-in + cloud) with edit/delete
-// ============================================================
-async function renderAllQuestionsTab(){
-  const body=document.getElementById('adminBody');
-  body.innerHTML='<div style="text-align:center;padding:20px;color:#888;">Loading all questions...</div>';
-
-  // Built-in questions from QB object
-  const builtIn=[];
-  Object.entries(QB).forEach(([subj,qs])=>{
-    qs.forEach((q,idx)=>{
-      builtIn.push({...q,subject:subj,_source:'local',_idx:idx,id:'local_'+subj+'_'+idx});
-    });
-  });
-
-  // Cloud questions from Supabase
-  let cloudQs=[];
-  try{
-    const {data}=await supa.from('questions').select('*').order('created_at',{ascending:false});
-    cloudQs=data||[];
-  }catch(e){}
-
-  const total=builtIn.length+cloudQs.length;
-  const lbls=['A','B','C','D','E'];
-
-  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-    <div style="color:var(--gold);font-size:0.8rem;font-weight:700;">📚 ${total} Total Questions</div>
-    <div style="font-size:0.7rem;color:#888;">☁️ ${cloudQs.length} cloud &nbsp;|&nbsp; 💾 ${builtIn.length} built-in</div>
-  </div>
-  <input id="adminQSearch" placeholder="🔍 Search questions..." oninput="filterAdminQ(this.value)" style="width:100%;background:var(--input-bg);border:1px solid #444;color:var(--text);border-radius:10px;padding:10px;font-size:0.85rem;font-family:inherit;outline:none;margin-bottom:12px;">
-  <div id="adminQList">`;
-
-  // Cloud questions first (editable/deletable)
-  cloudQs.forEach(q=>{
-    const sm=Object.assign({},subjectMeta,JAMB_SUBJECTS)[q.subject]||{icon:'📚',name:q.subject};
-    html+=`<div class="admin-card" style="padding:12px;margin-bottom:8px;" data-search="${(q.question+q.subject).toLowerCase()}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
-        <span style="font-size:0.7rem;color:var(--gold);font-weight:700;">☁️ ${sm.icon} ${sm.name}</span>
-        <span class="diff-badge ${q.difficulty||'moderate'}">${q.difficulty||'moderate'}</span>
-      </div>
-      <div style="font-size:0.82rem;color:var(--white);margin-bottom:8px;">${q.question}</div>
-      <div style="font-size:0.72rem;color:#888;margin-bottom:8px;">${[q.option_a,q.option_b,q.option_c,q.option_d].map((o,i)=>`<b style="color:${i===q.correct_answer?'var(--correct)':'#888'}">${lbls[i]}.</b> ${o}`).join(' &nbsp; ')}</div>
-      ${q.explanation?`<div style="font-size:0.72rem;color:#aaa;font-style:italic;">💡 ${q.explanation}</div>`:''}
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button onclick="adminEditCloudQ('${q.id}')" style="background:rgba(255,215,0,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">✏️ Edit</button>
-        <button onclick="adminDeleteCloudQ('${q.id}')" style="background:rgba(220,53,69,0.15);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">🗑 Delete</button>
-      </div>
-    </div>`;
-  });
-
-  // Built-in questions (admin can delete from local QB)
-  builtIn.slice(0,200).forEach(q=>{
-    const sm=Object.assign({},subjectMeta,JAMB_SUBJECTS)[q.subject]||{icon:'📚',name:q.subject};
-    html+=`<div class="admin-card" style="padding:12px;margin-bottom:8px;opacity:0.85;" data-search="${(q.q+q.subject).toLowerCase()}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
-        <span style="font-size:0.7rem;color:#888;font-weight:700;">💾 ${sm.icon} ${sm.name} (Built-in)</span>
-        <span class="diff-badge ${q.difficulty||'moderate'}">${q.difficulty||'moderate'}</span>
-      </div>
-      <div style="font-size:0.82rem;color:var(--white);margin-bottom:8px;">${q.q}</div>
-      <div style="font-size:0.72rem;color:#888;">${(q.opts||[]).map((o,i)=>`<b style="color:${i===q.ans?'var(--correct)':'#888'}">${lbls[i]}.</b> ${o}`).join(' &nbsp; ')}</div>
-    </div>`;
-  });
-
-  html+='</div>';
-  body.innerHTML=html;
-}
-
-function filterAdminQ(val){
-  const v=val.toLowerCase();
-  document.querySelectorAll('#adminQList .admin-card').forEach(card=>{
-    card.style.display=(!v||card.dataset.search?.includes(v))?'':'none';
-  });
-}
-
-async function adminDeleteCloudQ(id){
-  if(!confirm('Delete this question from cloud? This cannot be undone.'))return;
-  try{
-    await supa.from('questions').delete().eq('id',id);
-    setAdminTab('allquestions');
-  }catch(e){alert('Delete failed.');}
-}
-
-async function adminEditCloudQ(id){
-  const {data}=await supa.from('questions').select('*').eq('id',id).single();
-  if(!data)return;
-  const newQ=prompt('Edit question text:',data.question);
-  if(!newQ)return;
-  const newAns=prompt('Correct answer index (0=A, 1=B, 2=C, 3=D):',data.correct_answer);
-  const newExp=prompt('Explanation (optional):',data.explanation||'');
-  try{
-    await supa.from('questions').update({question:newQ,correct_answer:parseInt(newAns)||0,explanation:newExp||''}).eq('id',id);
-    setAdminTab('allquestions');
-  }catch(e){alert('Update failed.');}
-}
-
-// Admin delete attempt
-async function adminDeleteAttempt(id){
-  if(!confirm('Delete this attempt record?'))return;
-  try{
-    await supa.from('attempts').delete().eq('id',id);
-    setAdminTab('attempts');
-  }catch(e){alert('Delete failed.');}
-}
-
-// ============================================================
-// NO-REPEAT QUESTION SYSTEM
-// ============================================================
-// Hash a question to a short fingerprint
-function hashQ(q){
-  let h=0;
-  const s=(q.q||q.question||'').slice(0,50);
-  for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
-  return Math.abs(h).toString(36);
-}
-
-// Get set of answered question hashes for this user
-async function getAnsweredHashes(){
-  if(!currentUser)return new Set();
-  try{
-    const {data}=await supa.from('user_answered').select('question_hash').eq('user_id',currentUser.id);
-    return new Set((data||[]).map(r=>r.question_hash));
-  }catch(e){return new Set();}
-}
-
-// Mark questions as answered in Supabase
-async function markQuestionsAnswered(questions){
-  if(!currentUser||!questions.length)return;
-  try{
-    const rows=questions.map(q=>({user_id:currentUser.id,question_hash:hashQ(q)}));
-    // upsert to avoid duplicates (unique constraint handles it)
-    await supa.from('user_answered').upsert(rows,{onConflict:'user_id,question_hash',ignoreDuplicates:true});
-  }catch(e){console.log('Mark answered error:',e);}
-}
-
-// Enhanced pickWithDifficulty that excludes already-answered questions
-async function pickQuestionsForUser(pool, count){
-  const answered=await getAnsweredHashes();
-  // Separate fresh from seen
-  const fresh=pool.filter(q=>!answered.has(hashQ(q)));
-  const seen=pool.filter(q=>answered.has(hashQ(q)));
-  // Use fresh first, fall back to seen if not enough
-  let candidates=fresh.length>=count?fresh:[...fresh,...seen];
-  return pickWithDifficulty(candidates,count);
-}
-
-// No-repeat: mark answered then run core quiz end logic
-function _endQuizCore(timeout,antiCheat){
-  if(currentSession&&currentSession.length&&currentUser){
-    markQuestionsAnswered(currentSession);
-  }
-  _endQuizCoreBase(timeout,antiCheat);
-}
-
-// ============================================================
-// UPDATE setAdminTab for new tabs
-// ============================================================
-function setAdminTab(tab){
-  adminCurrentTab=tab;
-  const tabs=['overview','users','addq','bulkq','allquestions','attempts'];
-  document.querySelectorAll('.admin-tab').forEach((el,i)=>{
-    el.className='admin-tab'+(tabs[i]===tab?' active':'');
-  });
-  if(tab==='bulkq') renderAdminBulkParser();
-  else if(tab==='allquestions') renderAllQuestionsTab();
-  else if(tab==='attempts') renderAttemptsList();
-  else renderAdminTab(tab);
-}
-
-// Update attempts tab to include delete buttons
-async function renderAttemptsList(){
-  const body=document.getElementById('adminBody');
-  try{
-    const {data}=await supa.from('attempts').select('*').order('created_at',{ascending:false}).limit(100);
-    if(!data||!data.length){body.innerHTML='<div style="padding:20px;color:#888;">No attempts recorded yet.</div>';return;}
-    let html=`<div style="color:var(--gold);font-size:0.75rem;font-weight:700;margin-bottom:12px;">📈 ${data.length} Recent Attempts</div>`;
-    data.forEach(a=>{
-      const col=a.percent>=70?'#FFD700':a.percent>=50?'#ffc107':'#dc3545';
-      const dt=new Date(a.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-      html+=`<div class="user-row" style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;">
-          <div class="uname">${a.user_name} <span style="color:${col};font-weight:900;">${a.percent}%</span></div>
-          <div class="umeta">${a.subject} · ${a.score}/${a.total} correct · ${dt}</div>
-        </div>
-        <button onclick="adminDeleteAttempt('${a.id}')" style="background:rgba(220,53,69,0.15);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:5px 10px;font-size:0.7rem;cursor:pointer;flex-shrink:0;">🗑</button>
-      </div>`;
-    });
-    body.innerHTML=html;
-  }catch(e){body.innerHTML='<div style="color:var(--wrong);padding:20px;">Error loading attempts.</div>';}
-}
-
-// renderAttemptsList is called by setAdminTab for the attempts tab
 
 </script>
 </body>
