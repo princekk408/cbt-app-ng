@@ -2882,8 +2882,27 @@ function setTheme(t){
 function toggleTheme(){setTheme(getTheme()==='light'?'dark':'light');}
 setTheme(getTheme());
 
-// ===== NAVIGATION =====
-// hideAll is defined later with full screen list including multiplayer screens
+// ============================================================
+// GLOBAL STATE — all declared here to avoid "before init" errors
+// ============================================================
+var currentUser=null;
+var chatRealtimeChannel=null;
+var currentChatTopic='group';
+var currentDMUser=null;
+var _notifQueue=[];
+var _notifShowing=false;
+var _notifData=[];
+var aiHistory=[];
+var duelState={roomId:null,opponentId:null,opponentName:'',questions:[],answers:{},score:0,oppScore:0,index:0,timer:null,timeLeft:0,ended:false};
+var _duelChannel=null;
+var _duelRequestChannel=null;
+var liveQuiz={roomId:null,questions:[],currentQ:0,score:0,correct:0,timer:null,timePerQ:15,participants:{},channel:null,ended:false,startTime:null};
+var currentCommentTopic='general';
+var _lqTimerInterval=null;
+var _presenceChannel=null;
+var _onlineUsers=[];
+var adminCurrentTab='overview';
+
 function setThemeToggleVisible(v){const b=document.getElementById('themeToggleBtn');if(b)b.className='theme-toggle'+(v?' ontop':'');}
 
 function showSplash(){
@@ -4277,7 +4296,7 @@ function getRank(xp){return RANKS.find(r=>xp>=r.min&&xp<=r.max)||RANKS[0];}
 // ============================================================
 // CURRENT USER STATE
 // ============================================================
-let currentUser=null;
+// currentUser declared at top of script
 
 function getCurrentUser(){
   try{
@@ -4903,7 +4922,7 @@ function beginQuiz(customTime){
 // ============================================================
 // ADMIN PANEL
 // ============================================================
-let adminCurrentTab='overview';
+// adminCurrentTab declared at top
 
 // setAdminTab defined later with full tab support including allquestions
 
@@ -5201,9 +5220,7 @@ async function doRegister(){
 // ============================================================
 // GROUP CHAT
 // ============================================================
-let chatRealtimeChannel=null;
-let currentChatTopic='group';
-let currentDMUser=null;
+// chatRealtimeChannel, currentChatTopic, currentDMUser declared at top
 
 function showChatTab(tab){
   document.getElementById('chatTabGroup').className='admin-tab'+(tab==='group'?' active':'');
@@ -5432,8 +5449,7 @@ function updateDMUnreadBadge(){
 // ============================================================
 // IN-APP NOTIFICATION SYSTEM
 // ============================================================
-let _notifQueue=[];
-let _notifShowing=false;
+// _notifQueue, _notifShowing declared at top
 
 function showInAppNotification(text,type){
   // Don't show if user is already on chat screen viewing that tab
@@ -5855,7 +5871,7 @@ async function deleteComment(id){
 // ============================================================
 const AI_SYSTEM_PROMPT=`You are a brilliant, friendly study assistant for Nigerian students preparing for JAMB and RSU (Rivers State University) Post UTME exams. You know all JAMB subjects thoroughly: Mathematics, English, Biology, Chemistry, Physics, Literature, Government, CRS, Economics, Geography, History and more. You give clear, concise explanations. When solving problems, show step-by-step working. Use Nigerian examples where relevant. You can explain difficult concepts simply, create practice questions, and give exam tips. Always be encouraging and supportive. Keep responses concise and mobile-friendly.`;
 
-let aiHistory=[];
+// aiHistory declared at top
 
 function initAIChat(){
   const msgs=document.getElementById('aiMessages');
@@ -6213,8 +6229,7 @@ function getXPFromCorrect(correct,total,speedBonus){
 // ============================================================
 // ONLINE PRESENCE
 // ============================================================
-let _presenceChannel=null;
-let _onlineUsers=[];
+// _presenceChannel, _onlineUsers declared at top
 
 async function markUserOnline(){
   if(!currentUser)return;
@@ -6243,9 +6258,7 @@ async function markUserOffline(){
 // ============================================================
 // DUEL LOBBY
 // ============================================================
-let duelState={roomId:null,opponentId:null,opponentName:'',questions:[],answers:{},score:0,oppScore:0,index:0,timer:null,timeLeft:0,ended:false};
-let _duelChannel=null;
-let _duelRequestChannel=null;
+// duelState, _duelChannel, _duelRequestChannel declared at top
 
 function setDuelTab(tab){
   ['online','history','rank'].forEach(t=>{
@@ -6754,7 +6767,7 @@ function renderDuelResult(won,draw,myCorrect,oppCorrect,acc,xp,timedOut){
 // LIVE QUIZ (Max 30 players)
 // ============================================================
 const LIVE_QUIZ_MAX=30;
-let liveQuiz={roomId:null,questions:[],currentQ:0,score:0,correct:0,timer:null,timePerQ:15,participants:{},channel:null,ended:false,startTime:null};
+// liveQuiz declared at top
 
 async function joinLiveQuizWaitRoom(){
   if(!currentUser){alert('Please log in.');return;}
@@ -6888,7 +6901,7 @@ function subscribeLiveQuizRoom(){
     }).subscribe();
 }
 
-let _lqTimerInterval=null;
+// _lqTimerInterval declared at top
 function renderLiveQuizQuestion(idx){
   if(idx>=liveQuiz.questions.length){endLiveQuiz();return;}
   clearInterval(_lqTimerInterval);
@@ -7036,7 +7049,7 @@ function leaveLiveQuiz(){
 // ============================================================
 // NOTIFICATIONS SYSTEM
 // ============================================================
-let _notifData=[];
+// _notifData declared at top
 
 async function loadAndSubscribeNotifications(){
   if(!currentUser)return;
