@@ -4261,6 +4261,20 @@ const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 // ============================================================
+// RANK SYSTEM — defined early so all functions can use it
+// ============================================================
+const RANKS=[
+  {name:'Bronze',min:0,max:499,icon:'🥉',cls:'rank-bronze'},
+  {name:'Silver',min:500,max:999,icon:'🥈',cls:'rank-silver'},
+  {name:'Gold',min:1000,max:1999,icon:'🥇',cls:'rank-gold-r'},
+  {name:'Platinum',min:2000,max:3499,icon:'💎',cls:'rank-platinum'},
+  {name:'Diamond',min:3500,max:5999,icon:'💠',cls:'rank-diamond'},
+  {name:'Master',min:6000,max:9999,icon:'⭐',cls:'rank-master'},
+  {name:'Grandmaster',min:10000,max:Infinity,icon:'👑',cls:'rank-grandmaster'}
+];
+function getRank(xp){return RANKS.find(r=>xp>=r.min&&xp<=r.max)||RANKS[0];}
+
+// ============================================================
 // CURRENT USER STATE
 // ============================================================
 let currentUser=null;
@@ -5212,40 +5226,40 @@ function closeDMConv(){
 
 async function loadGroupMessages(){
   const container=document.getElementById('chatGroupMessages');
-  container.innerHTML='<div style="text-align:center;color:#666;font-size:0.8rem;padding:30px;">⏳ Loading...</div>';
+  container.innerHTML='<div style="text-align:center;color:#666;font-size:0.8rem;padding:30px;">⏳ Loading messages...</div>';
   try{
     const {data,error}=await supa.from('messages')
-      .select('*').eq('is_group',true)
-      .order('created_at',{ascending:true}).limit(100);
+      .select('*')
+      .eq('is_group',true)
+      .order('created_at',{ascending:true})
+      .limit(200);
     if(error) throw error;
     container.innerHTML='';
     const messages=data||[];
     if(!messages.length){
-      container.innerHTML='<div style="text-align:center;padding:50px 20px;"><div style="font-size:2.5rem;margin-bottom:10px;">💬</div><div style="color:#666;font-size:0.85rem;">No messages yet.<br>Say hello to everyone!</div></div>';
+      container.innerHTML='<div style="text-align:center;padding:50px 20px;"><div style="font-size:2.5rem;margin-bottom:10px;">💬</div><div style="color:#666;font-size:0.85rem;">No messages yet. Say hello to everyone!</div></div>';
     } else {
       messages.forEach(m=>appendGroupMessage(m,false));
       setTimeout(()=>{container.scrollTop=container.scrollHeight;},100);
     }
-    // Real-time: listen for new group messages
+    // Real-time subscription for new group messages
     if(chatRealtimeChannel){try{supa.removeChannel(chatRealtimeChannel);}catch(e){}}
-    chatRealtimeChannel=supa.channel('group_realtime_'+Date.now())
+    chatRealtimeChannel=supa.channel('grp_'+Date.now())
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},(payload)=>{
         if(payload.new&&payload.new.is_group===true){
-          // Only append if we're on group tab and it's not our own message (already shown optimistically)
-          if(currentChatTopic==='group'&&payload.new.sender_id!==currentUser?.id){
-            appendGroupMessage(payload.new,true);
+          const isMyMsg=payload.new.sender_id===currentUser?.id;
+          if(!isMyMsg) appendGroupMessage(payload.new,true);
+          if(currentChatTopic!=='group'){
+            showInAppNotification('💬 '+payload.new.sender_name+': '+(payload.new.content||'').slice(0,40),'group');
           }
-          // Show notification if not on chat screen
-          showInAppNotification('💬 '+payload.new.sender_name+': '+payload.new.content.slice(0,50),'group');
         }
         if(payload.new&&payload.new.is_group===false&&payload.new.receiver_id===currentUser?.id){
-          // New DM received
           updateDMUnreadBadge();
-          showInAppNotification('✉️ New message from '+payload.new.sender_name,'dm');
+          showInAppNotification('✉️ New DM from '+payload.new.sender_name,'dm');
         }
       }).subscribe();
   }catch(e){
-    container.innerHTML='<div style="color:var(--wrong);padding:20px;text-align:center;">❌ Could not load messages.</div>';
+    container.innerHTML='<div style="color:var(--wrong);padding:20px;text-align:center;">❌ Could not load messages.<br><small style="color:#888;">'+e.message+'</small></div>';
   }
 }
 
@@ -5616,18 +5630,18 @@ async function loadDMUsers(){
 }
 
 function openDM(user){
+  if(!user||!user.id){console.error('openDM: invalid user',user);return;}
   currentDMUser=user;
-  const pick=document.getElementById('dmPickUser');
-  const conv=document.getElementById('dmConversation');
-  const inputRow=document.getElementById('dmInputRow');
-  pick.style.display='none';
-  conv.style.display='flex';
-  conv.style.flexDirection='column';
-  conv.style.flex='1';
-  conv.style.overflowY='auto';
-  conv.style.padding='12px';
-  conv.style.gap='8px';
-  inputRow.style.display='flex';
+  // Use new panel IDs from rebuilt chat HTML
+  const userListPanel=document.getElementById('dmUserListPanel');
+  const convPanel=document.getElementById('dmConvPanel');
+  const titleEl=document.getElementById('dmConvTitle');
+  if(userListPanel) userListPanel.style.display='none';
+  if(convPanel){convPanel.style.display='flex';convPanel.style.flexDirection='column';}
+  if(titleEl){
+    const initials=user.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+    titleEl.innerHTML='<span style="background:#444;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;margin-right:6px;">'+initials+'</span>'+user.name;
+  }
   loadDMMessages(user);
 }
 
@@ -6191,18 +6205,7 @@ function playSound(type){
 // ============================================================
 // RANK SYSTEM
 // ============================================================
-const RANKS=[
-  {name:'Bronze',min:0,max:499,icon:'🥉',class:'rank-bronze'},
-  {name:'Silver',min:500,max:999,icon:'🥈',class:'rank-silver'},
-  {name:'Gold',min:1000,max:1999,icon:'🥇',class:'rank-gold-r'},
-  {name:'Platinum',min:2000,max:3499,icon:'💎',class:'rank-platinum'},
-  {name:'Diamond',min:3500,max:5999,icon:'💠',class:'rank-diamond'},
-  {name:'Master',min:6000,max:9999,icon:'⭐',class:'rank-master'},
-  {name:'Grandmaster',min:10000,max:Infinity,icon:'👑',class:'rank-grandmaster'}
-];
-
-function getRank(xp){return RANKS.find(r=>xp>=r.min&&xp<=r.max)||RANKS[0];}
-
+// getRank defined at top of file
 function getXPFromCorrect(correct,total,speedBonus){
   return Math.round(correct*10+(speedBonus||0)+total*2);
 }
@@ -6376,11 +6379,10 @@ async function loadDuelRankings(){
 // ============================================================
 // DUEL REQUEST SYSTEM
 // ============================================================
-async function sendDuelRequest(targetId, targetName){
+async function sendDuelRequest(targetId,targetName){
   if(!currentUser){alert('Please log in.');return;}
   playSound('duel');
   try{
-    // Create duel request in DB
     const {data,error}=await supa.from('duel_requests').insert([{
       from_user_id:currentUser.id,
       from_user_name:currentUser.name,
@@ -6389,7 +6391,7 @@ async function sendDuelRequest(targetId, targetName){
       status:'pending'
     }]).select().single();
     if(error) throw error;
-    // Send notification to target
+    // Save notification for target
     await supa.from('notifications').insert([{
       user_id:targetId,
       type:'duel_request',
@@ -6398,38 +6400,58 @@ async function sendDuelRequest(targetId, targetName){
       data:JSON.stringify({requestId:data.id,fromId:currentUser.id,fromName:currentUser.name}),
       read:false
     }]);
-    showToast('⚔️ Duel request sent to '+targetName+'! Waiting for response...');
-    // Wait for response
-    waitForDuelResponse(data.id);
+    waitForDuelResponse(data.id,targetName);
   }catch(e){alert('Could not send duel request: '+e.message);}
 }
 
-function waitForDuelResponse(requestId){
-  const ch=supa.channel('duel_req_'+requestId)
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'duel_requests',filter:'id=eq.'+requestId},(payload)=>{
-      if(payload.new.status==='accepted'){
-        supa.removeChannel(ch);
-        playSound('win');
-        startDuel(payload.new);
-      } else if(payload.new.status==='declined'){
-        supa.removeChannel(ch);
-        showToast('❌ '+payload.new.to_user_name+' declined the duel.');
-      }
-    }).subscribe();
-  // Auto-cancel after 60 seconds
-  setTimeout(()=>{try{supa.removeChannel(ch);}catch(e){}},60000);
+function waitForDuelResponse(requestId, opponentName){
+  showToast('⏳ Waiting for '+opponentName+' to respond...',10000);
+  subscribeToDuelResponses(requestId,(updated)=>{
+    if(updated.status==='accepted'){
+      playSound('win');
+      showToast('✅ '+opponentName+' accepted! Starting duel...','2000');
+      setTimeout(()=>startDuel(updated),1500);
+    } else if(updated.status==='declined'){
+      showToast('❌ '+opponentName+' declined the duel.');
+    }
+  });
 }
 
 function subscribeToDuelRequests(){
   if(!currentUser)return;
   if(_duelRequestChannel){try{supa.removeChannel(_duelRequestChannel);}catch(e){}}
-  _duelRequestChannel=supa.channel('incoming_duels_'+currentUser.id)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'duel_requests',filter:'to_user_id=eq.'+currentUser.id},(payload)=>{
-      if(payload.new.status==='pending'){
+  // Listen to ALL new duel requests, filter by recipient in JS
+  _duelRequestChannel=supa.channel('duel_req_inbox_'+currentUser.id)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'duel_requests'},(payload)=>{
+      if(payload.new&&payload.new.to_user_id===currentUser.id&&payload.new.status==='pending'){
         showDuelRequestModal(payload.new);
         playSound('notification');
+        // Also push to notifications list
+        _notifData.unshift({
+          id:'local_'+Date.now(),
+          type:'duel_request',
+          title:'⚔️ Duel Request!',
+          message:payload.new.from_user_name+' wants to duel you!',
+          data:JSON.stringify({requestId:payload.new.id,fromId:payload.new.from_user_id,fromName:payload.new.from_user_name}),
+          read:false,
+          created_at:new Date().toISOString()
+        });
+        updateNotifBadge();
       }
     }).subscribe();
+}
+
+// Also subscribe to duel request status changes (for sender to know if accepted/declined)
+function subscribeToDuelResponses(requestId,callback){
+  const ch=supa.channel('duel_resp_'+requestId+'_'+Date.now())
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'duel_requests'},(payload)=>{
+      if(payload.new&&payload.new.id===requestId){
+        supa.removeChannel(ch);
+        callback(payload.new);
+      }
+    }).subscribe();
+  setTimeout(()=>{try{supa.removeChannel(ch);}catch(e){}},90000);
+  return ch;
 }
 
 function showDuelRequestModal(req){
@@ -6482,46 +6504,80 @@ async function declineDuel(requestId){
 // DUEL GAME ENGINE
 // ============================================================
 async function startDuel(req){
-  // Determine opponent
   const isChallenger=req.from_user_id===currentUser.id;
   duelState.opponentId=isChallenger?req.to_user_id:req.from_user_id;
   duelState.opponentName=isChallenger?req.to_user_name:req.from_user_name;
-  duelState.answers={};duelState.score=0;duelState.oppScore=0;duelState.index=0;duelState.ended=false;
+  duelState.answers={};duelState.score=0;duelState.oppScore=0;
+  duelState.index=0;duelState.ended=false;
 
-  // Pick 10 questions from mixed subjects
+  // Pick 10 questions seeded by request ID so both players get SAME questions
+  const seed=req.id||'';
   const allQ=[];
   Object.values(QB).forEach(qs=>allQ.push(...qs));
-  allQ.sort(()=>Math.random()-0.5);
+  // Deterministic shuffle using request ID as seed
+  const seededSort=(a,b)=>{
+    const ha=hashStr(seed+(a.q||'').slice(0,10));
+    const hb=hashStr(seed+(b.q||'').slice(0,10));
+    return ha-hb;
+  };
+  allQ.sort(seededSort);
   duelState.questions=allQ.slice(0,10);
 
-  // Create or join duel room
+  // Room management
   try{
-    let roomId;
     if(isChallenger){
-      const {data}=await supa.from('duel_rooms').insert([{
+      // Challenger creates the room
+      const {data,error}=await supa.from('duel_rooms').insert([{
         challenger_id:currentUser.id,challenger_name:currentUser.name,
         opponent_id:duelState.opponentId,opponent_name:duelState.opponentName,
-        questions:JSON.stringify(duelState.questions.map(q=>q.q)),
+        questions:JSON.stringify(duelState.questions.map(q=>({q:q.q,opts:q.opts,ans:q.ans,explanation:q.explanation||''}))),
         status:'active'
       }]).select().single();
-      roomId=data.id;
+      if(error) throw error;
+      duelState.roomId=data.id;
     } else {
-      const {data}=await supa.from('duel_rooms').select('id').eq('challenger_id',req.from_user_id).eq('opponent_id',currentUser.id).eq('status','active').single();
-      roomId=data?.id;
-      if(!roomId) throw new Error('Room not found');
+      // Opponent finds the room created by challenger — wait up to 5 seconds
+      let roomId=null;
+      for(let attempt=0;attempt<10;attempt++){
+        const {data}=await supa.from('duel_rooms').select('id,questions').eq('challenger_id',req.from_user_id).eq('opponent_id',currentUser.id).eq('status','active').maybeSingle();
+        if(data){roomId=data.id;
+          // Load same questions from room
+          try{duelState.questions=JSON.parse(data.questions||'[]');}catch(e){}
+          break;
+        }
+        await new Promise(r=>setTimeout(r,500));
+      }
+      if(!roomId){
+        // Create fallback room
+        const {data}=await supa.from('duel_rooms').insert([{
+          challenger_id:req.from_user_id,challenger_name:req.from_user_name,
+          opponent_id:currentUser.id,opponent_name:currentUser.name,
+          questions:JSON.stringify(duelState.questions.map(q=>({q:q.q,opts:q.opts,ans:q.ans,explanation:q.explanation||''}))),
+          status:'active'
+        }]).select().single();
+        roomId=data?.id;
+      }
+      duelState.roomId=roomId;
     }
-    duelState.roomId=roomId;
   }catch(e){console.log('Duel room error:',e);}
 
+  // Both players enter room simultaneously
   hideAll();
   document.getElementById('duelRoomScreen').style.display='flex';
   setThemeToggleVisible(false);
-  document.getElementById('duelMyName').textContent='You';
-  document.getElementById('duelOppName').textContent=duelState.opponentName;
-  duelState.timeLeft=1200; // 20 minutes
+  document.getElementById('duelMyName').textContent='You ('+currentUser.name.split(' ')[0]+')';
+  document.getElementById('duelOppName').textContent=duelState.opponentName.split(' ')[0];
+  duelState.timeLeft=1200;
   startDuelTimer();
   renderDuelQuestion(0);
   subscribeToDuelRoom();
+  showToast('⚔️ Duel started! Answer as fast as you can!',3000);
+}
+
+function hashStr(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){h=(Math.imul(31,h)+str.charCodeAt(i))|0;}
+  return Math.abs(h);
 }
 
 function startDuelTimer(){
@@ -6988,20 +7044,26 @@ async function loadAndSubscribeNotifications(){
     const {data}=await supa.from('notifications').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(30);
     _notifData=data||[];
     updateNotifBadge();
-    // Subscribe to new notifications
-    supa.channel('notif_'+currentUser.id)
-      .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+currentUser.id},(payload)=>{
-        _notifData.unshift(payload.new);
-        updateNotifBadge();
-        showInAppNotification(payload.new.title+': '+payload.new.message,'notification');
-        playSound('notification');
-        // Handle duel requests
-        if(payload.new.type==='duel_request'){
-          const d=JSON.parse(payload.new.data||'{}');
-          showDuelRequestModal({id:d.requestId,from_user_id:d.fromId,from_user_name:d.fromName,to_user_name:currentUser.name});
+    // Subscribe to new notifications — filter in JS because Supabase filter on UUID can be unreliable
+    supa.channel('notifs_'+currentUser.id+'_'+Date.now())
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},(payload)=>{
+        if(payload.new&&payload.new.user_id===currentUser.id){
+          _notifData.unshift(payload.new);
+          updateNotifBadge();
+          playSound('notification');
+          showInAppNotification((payload.new.title||'New notification')+': '+(payload.new.message||''),'notification');
+          // Handle duel request popup immediately
+          if(payload.new.type==='duel_request'){
+            try{
+              const d=JSON.parse(payload.new.data||'{}');
+              if(d.requestId) showDuelRequestModal({id:d.requestId,from_user_id:d.fromId,from_user_name:d.fromName,to_user_id:currentUser.id,to_user_name:currentUser.name});
+            }catch(e){}
+          }
         }
       }).subscribe();
-  }catch(e){}
+    // Also always subscribe to duel requests directly
+    subscribeToDuelRequests();
+  }catch(e){console.log('Notification load error:',e);}
 }
 
 function updateNotifBadge(){
