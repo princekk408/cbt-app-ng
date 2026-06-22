@@ -6522,12 +6522,12 @@ async function startDuel(req){
   duelState.opponentName=isChallenger?req.to_user_name:req.from_user_name;
   duelState.answers={};duelState.score=0;duelState.oppScore=0;
   duelState.index=0;duelState.ended=false;
+  duelState.questionStartTime={}; // track when each question started
 
-  // Pick 10 questions seeded by request ID so both players get SAME questions
+  // 10 questions seeded by request ID — both players get SAME questions
   const seed=req.id||'';
   const allQ=[];
   Object.values(QB).forEach(qs=>allQ.push(...qs));
-  // Deterministic shuffle using request ID as seed
   const seededSort=(a,b)=>{
     const ha=hashStr(seed+(a.q||'').slice(0,10));
     const hb=hashStr(seed+(b.q||'').slice(0,10));
@@ -6536,10 +6536,9 @@ async function startDuel(req){
   allQ.sort(seededSort);
   duelState.questions=allQ.slice(0,10);
 
-  // Room management
+  // Room management — challenger creates room immediately
   try{
     if(isChallenger){
-      // Challenger creates the room
       const {data,error}=await supa.from('duel_rooms').insert([{
         challenger_id:currentUser.id,challenger_name:currentUser.name,
         opponent_id:duelState.opponentId,opponent_name:duelState.opponentName,
@@ -6549,42 +6548,34 @@ async function startDuel(req){
       if(error) throw error;
       duelState.roomId=data.id;
     } else {
-      // Opponent finds the room created by challenger — wait up to 5 seconds
-      let roomId=null;
-      for(let attempt=0;attempt<10;attempt++){
-        const {data}=await supa.from('duel_rooms').select('id,questions').eq('challenger_id',req.from_user_id).eq('opponent_id',currentUser.id).eq('status','active').maybeSingle();
-        if(data){roomId=data.id;
-          // Load same questions from room
-          try{duelState.questions=JSON.parse(data.questions||'[]');}catch(e){}
-          break;
-        }
-        await new Promise(r=>setTimeout(r,500));
+      // Opponent: poll for room (challenger creates it almost instantly)
+      let found=null;
+      for(let i=0;i<20;i++){
+        const {data}=await supa.from('duel_rooms').select('*')
+          .eq('challenger_id',req.from_user_id).eq('opponent_id',currentUser.id)
+          .eq('status','active').maybeSingle();
+        if(data){found=data;break;}
+        await new Promise(r=>setTimeout(r,300));
       }
-      if(!roomId){
-        // Create fallback room
-        const {data}=await supa.from('duel_rooms').insert([{
-          challenger_id:req.from_user_id,challenger_name:req.from_user_name,
-          opponent_id:currentUser.id,opponent_name:currentUser.name,
-          questions:JSON.stringify(duelState.questions.map(q=>({q:q.q,opts:q.opts,ans:q.ans,explanation:q.explanation||''}))),
-          status:'active'
-        }]).select().single();
-        roomId=data?.id;
+      if(found){
+        duelState.roomId=found.id;
+        try{duelState.questions=JSON.parse(found.questions||'[]');}catch(e){}
       }
-      duelState.roomId=roomId;
     }
-  }catch(e){console.log('Duel room error:',e);}
+  }catch(e){console.log('Room error:',e);}
 
-  // Both players enter room simultaneously
+  // Launch duel room UI
   hideAll();
   document.getElementById('duelRoomScreen').style.display='flex';
   setThemeToggleVisible(false);
-  document.getElementById('duelMyName').textContent='You ('+currentUser.name.split(' ')[0]+')';
+  document.getElementById('duelMyName').textContent=currentUser.name.split(' ')[0];
   document.getElementById('duelOppName').textContent=duelState.opponentName.split(' ')[0];
-  duelState.timeLeft=1200;
-  startDuelTimer();
-  renderDuelQuestion(0);
+  document.getElementById('duelMyScore').textContent='0';
+  document.getElementById('duelOppScore').textContent='0';
   subscribeToDuelRoom();
-  showToast('⚔️ Duel started! Answer as fast as you can!',3000);
+  showToast('⚔️ DUEL STARTED! 18 seconds per question!',3000);
+  playSound('duel');
+  renderDuelQuestion(0);
 }
 
 function hashStr(str){
@@ -6593,36 +6584,74 @@ function hashStr(str){
   return Math.abs(h);
 }
 
-function startDuelTimer(){
-  clearInterval(duelState.timer);
+// Per-question 18-second timer (replaces overall duel timer)
+var duelQTimer=null;
+var duelQTimeLeft=18;
+
+function startDuelQuestionTimer(idx){
+  clearInterval(duelQTimer);
+  duelQTimeLeft=18;
+  duelState.questionStartTime[idx]=Date.now();
   updateDuelTimerDisplay();
-  duelState.timer=setInterval(()=>{
-    duelState.timeLeft--;
+  duelQTimer=setInterval(()=>{
+    duelQTimeLeft--;
     updateDuelTimerDisplay();
-    if(duelState.timeLeft<=0){clearInterval(duelState.timer);endDuel(true);}
+    if(duelQTimeLeft<=0){
+      clearInterval(duelQTimer);
+      // Auto-advance: no answer = 0 marks
+      autoAdvanceDuel(idx);
+    }
   },1000);
 }
 
 function updateDuelTimerDisplay(){
-  const m=Math.floor(duelState.timeLeft/60);
-  const s=duelState.timeLeft%60;
   const el=document.getElementById('duelTimer');
-  if(el) el.textContent=m+':'+(s<10?'0':'')+s;
+  if(!el)return;
+  const t=duelQTimeLeft;
+  el.textContent=t+'s';
+  el.className='timer'+(t<=5?' danger':t<=10?' warn':'');
+}
+
+// Overwrite startDuelTimer to do nothing (we use per-question timers now)
+function startDuelTimer(){}
+
+function autoAdvanceDuel(idx){
+  // Mark as unanswered, show correct answer, advance
+  const q=duelState.questions[idx];
+  if(q&&duelState.answers[idx]===undefined){
+    duelState.answers[idx]=-1; // unanswered
+    // Show correct answer briefly
+    const opts=document.getElementById('duelOptions');
+    if(opts){
+      opts.querySelectorAll('.option-btn').forEach((btn,i)=>{
+        btn.disabled=true;
+        if(i===q.ans) btn.classList.add('correct');
+      });
+    }
+    const exp=document.getElementById('duelExplanation');
+    if(exp){exp.innerHTML='⏰ Time up! Correct answer highlighted.';exp.style.display='block';exp.style.background='rgba(255,193,7,0.15)';exp.style.border='1px solid #ffc107';}
+  }
+  setTimeout(()=>{
+    if(idx+1<duelState.questions.length) renderDuelQuestion(idx+1);
+    else endDuel(false);
+  },1200);
 }
 
 function renderDuelQuestion(idx){
+  clearInterval(duelQTimer);
   duelState.index=idx;
   const q=duelState.questions[idx];
-  if(!q) return endDuel(false);
+  if(!q){endDuel(false);return;}
   const total=duelState.questions.length;
-  document.getElementById('duelQNum').textContent='QUESTION '+(idx+1)+' OF '+total;
-  document.getElementById('duelQText').textContent=q.q;
+  document.getElementById('duelQNum').textContent='Q '+(idx+1)+' / '+total;
+  document.getElementById('duelQText').textContent=q.q||q;
   document.getElementById('duelProgressBar').style.width=((idx+1)/total*100)+'%';
   document.getElementById('duelExplanation').style.display='none';
   const opts=document.getElementById('duelOptions');
   opts.innerHTML='';
   const lbls=['A','B','C','D','E'];
-  (q.opts||[]).forEach((o,i)=>{
+  const qOpts=q.opts||['True','False','Cannot determine','None'];
+  qOpts.forEach((o,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn';
     btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span>'+o+'</span>';
@@ -6631,68 +6660,89 @@ function renderDuelQuestion(idx){
       else if(i===duelState.answers[idx]) btn.classList.add('wrong');
       btn.disabled=true;
     } else {
-      btn.onclick=()=>submitDuelAnswer(i);
+      btn.onclick=()=>submitDuelAnswer(i,idx);
     }
     opts.appendChild(btn);
   });
+  startDuelQuestionTimer(idx);
 }
 
-async function submitDuelAnswer(optIdx){
-  if(duelState.answers[duelState.index]!==undefined) return;
-  const idx=duelState.index;
+async function submitDuelAnswer(optIdx,questionIdx){
+  if(duelState.answers[questionIdx]!==undefined) return;
+  clearInterval(duelQTimer);
+  const idx=questionIdx!==undefined?questionIdx:duelState.index;
   const q=duelState.questions[idx];
-  duelState.answers[idx]=optIdx;
   const correct=optIdx===q.ans;
-  if(correct){duelState.score++;playSound('correct');}
-  else{playSound('wrong');}
-  // Update score display
-  document.getElementById('duelMyScore').textContent=duelState.score;
+
+  // SCORING: 8 marks for correct answer + up to 2 marks for speed
+  // Time bonus: 2 marks × (timeLeft/18). If wrong, 0 marks total.
+  const timeUsedSecs=18-duelQTimeLeft;
+  const timeFraction=Math.max(0,(18-timeUsedSecs)/18); // 1.0 at instant, 0 at timeout
+  const timeBonus=correct?parseFloat((timeFraction*2).toFixed(2)):0;
+  const questionScore=correct?(8+timeBonus):0;
+  const roundedScore=Math.round(questionScore);
+
+  duelState.answers[idx]=optIdx;
+  duelState.score=parseFloat((duelState.score+questionScore).toFixed(2));
+
+  // Update display
+  document.getElementById('duelMyScore').textContent=Math.round(duelState.score);
   const answered=Object.keys(duelState.answers).length;
-  const acc=Math.round(duelState.score/answered*100);
+  const correct_count=Object.values(duelState.answers).filter((a,i)=>a===duelState.questions[i]?.ans).length;
+  const acc=answered>0?Math.round(correct_count/answered*100):0;
   document.getElementById('duelMyAcc').textContent=acc+'% acc';
-  // Show explanation briefly
-  if(q.explanation){
-    const exp=document.getElementById('duelExplanation');
-    exp.innerHTML='<b>'+(correct?'✅ Correct!':'❌ Wrong — ')+'</b>'+q.explanation;
+
+  // Visual feedback
+  const opts=document.getElementById('duelOptions');
+  opts.querySelectorAll('.option-btn').forEach((btn,i)=>{
+    btn.disabled=true;
+    if(i===q.ans) btn.classList.add('correct');
+    else if(i===optIdx) btn.classList.add('wrong');
+  });
+  if(correct) playSound('correct');
+  else playSound('wrong');
+
+  const exp=document.getElementById('duelExplanation');
+  if(exp){
+    exp.innerHTML=(correct?'✅ Correct! +8 pts + ':'❌ Wrong! 0 pts. ')
+      +(correct?'<span style="color:#ffc107;">+'+timeBonus.toFixed(1)+' speed bonus</span> = <b>'+roundedScore+' pts</b>':'Correct: '+['A','B','C','D','E'][q.ans])
+      +(q.explanation?'<br><small style="color:#aaa;">'+q.explanation+'</small>':'');
     exp.style.display='block';
-    exp.style.background=correct?'rgba(40,167,69,0.15)':'rgba(220,53,69,0.15)';
+    exp.style.background=correct?'rgba(40,167,69,0.15)':'rgba(220,53,69,0.12)';
     exp.style.border='1px solid '+(correct?'var(--correct)':'var(--wrong)');
   }
-  // Push answer to Supabase for opponent to see
+
+  // Push answer to Supabase for opponent's live score update
   try{
     await supa.from('duel_answers').insert([{
-      room_id:duelState.roomId,
-      user_id:currentUser.id,
-      question_index:idx,
-      answer:optIdx,
-      correct
+      room_id:duelState.roomId,user_id:currentUser.id,
+      question_index:idx,answer:optIdx,correct,score:questionScore
     }]);
   }catch(e){}
-  // Re-render with disabled buttons
-  renderDuelQuestion(idx);
-  // Auto-advance after 2s
+
+  // Auto-advance after 1.5s
   setTimeout(()=>{
     if(idx+1<duelState.questions.length) renderDuelQuestion(idx+1);
     else endDuel(false);
-  },2000);
+  },1500);
 }
 
 function subscribeToDuelRoom(){
   if(!duelState.roomId)return;
   if(_duelChannel){try{supa.removeChannel(_duelChannel);}catch(e){}}
-  _duelChannel=supa.channel('duel_room_'+duelState.roomId)
+  _duelChannel=supa.channel('duel_live_'+duelState.roomId+'_'+Date.now())
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'duel_answers'},(payload)=>{
-      if(payload.new.user_id!==currentUser.id){
-        // Opponent answered
-        const opp=payload.new;
-        // Count opponent correct answers
-        supa.from('duel_answers').select('correct').eq('room_id',duelState.roomId).eq('user_id',duelState.opponentId).then(({data})=>{
-          if(!data)return;
-          const oppCorrect=data.filter(a=>a.correct).length;
-          duelState.oppScore=oppCorrect;
-          document.getElementById('duelOppScore').textContent=oppCorrect;
-          document.getElementById('duelOppAcc').textContent=Math.round(oppCorrect/data.length*100)+'% acc';
-        });
+      if(payload.new&&payload.new.user_id!==currentUser.id){
+        // Update opponent score live
+        supa.from('duel_answers').select('score,correct').eq('room_id',duelState.roomId).eq('user_id',duelState.opponentId)
+          .then(({data})=>{
+            if(!data)return;
+            const oppTotal=data.reduce((s,r)=>s+(r.score||0),0);
+            const oppCorrect=data.filter(r=>r.correct).length;
+            duelState.oppScore=oppTotal;
+            document.getElementById('duelOppScore').textContent=Math.round(oppTotal);
+            document.getElementById('duelOppAcc').textContent=Math.round(oppCorrect/data.length*100)+'% acc';
+          });
       }
     }).subscribe();
 }
@@ -6700,91 +6750,111 @@ function subscribeToDuelRoom(){
 async function endDuel(timedOut){
   if(duelState.ended)return;
   duelState.ended=true;
+  clearInterval(duelQTimer);
   clearInterval(duelState.timer);
   if(_duelChannel){try{supa.removeChannel(_duelChannel);}catch(e){}}
+
   const total=duelState.questions.length;
-  const myCorrect=duelState.score;
-  const oppCorrect=duelState.oppScore;
-  const won=myCorrect>oppCorrect;
-  const draw=myCorrect===oppCorrect;
+  const myFinalScore=Math.round(duelState.score);
+  const oppFinalScore=Math.round(duelState.oppScore);
+  const myCorrect=Object.entries(duelState.answers).filter(([i,a])=>parseInt(a)===duelState.questions[parseInt(i)]?.ans).length;
+  const won=myFinalScore>oppFinalScore;
+  const draw=myFinalScore===oppFinalScore;
   const result=won?'win':draw?'draw':'loss';
-  const xp=getXPFromCorrect(myCorrect,total,won?50:draw?20:0);
+  const xp=won?50+myCorrect*5:draw?25+myCorrect*3:10+myCorrect*2;
   const acc=total>0?Math.round(myCorrect/total*100):0;
-  // Save to match history and update stats
+  const maxScore=total*10;
+
   try{
     await supa.from('match_history').insert([{
       user_id:currentUser.id,opponent_name:duelState.opponentName,
-      my_score:myCorrect,opp_score:oppCorrect,result,xp_earned:xp,accuracy:acc
+      my_score:myFinalScore,opp_score:oppFinalScore,
+      result,xp_earned:xp,accuracy:acc
     }]);
+    const curXP=await getUserXP();
     await supa.from('user_stats').upsert({
-      user_id:currentUser.id,
-      xp:(await getUserXP())+xp,
-      wins:(won?1:0),losses:(!won&&!draw?1:0)
+      user_id:currentUser.id,xp:curXP+xp,
+      wins:won?1:0,losses:(!won&&!draw)?1:0
     },{onConflict:'user_id'});
   }catch(e){}
-  renderDuelResult(won,draw,myCorrect,oppCorrect,acc,xp,timedOut);
-}
 
-async function getUserXP(){
-  try{
-    const {data}=await supa.from('user_stats').select('xp').eq('user_id',currentUser.id).single();
-    return data?.xp||0;
-  }catch(e){return 0;}
-}
-
-function renderDuelResult(won,draw,myCorrect,oppCorrect,acc,xp,timedOut){
   hideAll();
   document.getElementById('duelResultScreen').style.display='flex';
   setThemeToggleVisible(true);
   if(won) playSound('win');
   const icon=won?'🏆':draw?'🤝':'💔';
-  const label=won?'You Won!':draw?'It\'s a Draw!':'You Lost!';
+  const label=won?'You Won!':draw?"It's a Draw!":'You Lost!';
   const col=won?'#FFD700':draw?'#ffc107':'#dc3545';
-  document.getElementById('duelResultBody').innerHTML='<div class="celebrate" style="text-align:center;padding:20px 0;">'
-    +'<div style="font-size:5rem;margin-bottom:10px;">'+icon+'</div>'
-    +'<div style="font-size:1.6rem;font-weight:900;color:'+col+';margin-bottom:6px;">'+label+'</div>'
-    +(timedOut?'<div style="color:#ffc107;font-size:0.8rem;margin-bottom:10px;">⏰ Time expired</div>':'')
+  document.getElementById('duelResultBody').innerHTML=
+    '<div class="celebrate" style="text-align:center;padding:20px 0;">'
+      +'<div style="font-size:5rem;margin-bottom:6px;">'+icon+'</div>'
+      +'<div style="font-size:1.6rem;font-weight:900;color:'+col+';margin-bottom:4px;">'+label+'</div>'
+      +(timedOut?'<div style="color:#ffc107;font-size:0.8rem;">⏰ Time expired</div>':'')
     +'</div>'
-    +'<div style="background:var(--card);border:2px solid '+col+';border-radius:16px;padding:20px;margin-bottom:16px;">'
-      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center;margin-bottom:16px;">'
-        +'<div><div style="font-size:2rem;font-weight:900;color:#28a745;">'+myCorrect+'</div><div style="font-size:0.72rem;color:#aaa;">Your Score</div></div>'
-        +'<div style="font-size:1.2rem;font-weight:900;color:#666;">VS</div>'
-        +'<div><div style="font-size:2rem;font-weight:900;color:#dc3545;">'+oppCorrect+'</div><div style="font-size:0.72rem;color:#aaa;">'+duelState.opponentName+'</div></div>'
+    +'<div style="background:var(--card);border:2px solid '+col+';border-radius:16px;padding:18px;margin-bottom:14px;">'
+      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center;margin-bottom:14px;">'
+        +'<div><div style="font-size:1.8rem;font-weight:900;color:#28a745;">'+myFinalScore+'</div><div style="font-size:0.65rem;color:#aaa;">Your Score</div><div style="font-size:0.65rem;color:#666;">/ '+maxScore+'</div></div>'
+        +'<div style="font-size:1rem;font-weight:900;color:#666;">VS</div>'
+        +'<div><div style="font-size:1.8rem;font-weight:900;color:#dc3545;">'+oppFinalScore+'</div><div style="font-size:0.65rem;color:#aaa;">'+duelState.opponentName.split(' ')[0]+'</div><div style="font-size:0.65rem;color:#666;">/ '+maxScore+'</div></div>'
+      +'</div>'
+      +'<div style="background:#111827;border-radius:10px;padding:10px;font-size:0.72rem;color:#aaa;text-align:center;margin-bottom:10px;">'
+        +'Scoring: 8 pts per correct + up to 2 pts speed bonus (rounded to nearest whole number)'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">'
+        +'<div><div style="font-size:1rem;font-weight:700;color:#28a745;">'+myCorrect+'/'+total+'</div><div style="font-size:0.65rem;color:#888;">Correct</div></div>'
         +'<div><div style="font-size:1rem;font-weight:700;color:var(--gold);">'+acc+'%</div><div style="font-size:0.65rem;color:#888;">Accuracy</div></div>'
-        +'<div><div style="font-size:1rem;font-weight:700;color:var(--gold);">+'+xp+'</div><div style="font-size:0.65rem;color:#888;">XP Earned</div></div>'
-        +'<div><div style="font-size:1rem;font-weight:700;color:var(--gold);">'+duelState.questions.length+'</div><div style="font-size:0.65rem;color:#888;">Questions</div></div>'
+        +'<div><div style="font-size:1rem;font-weight:700;color:#17a2b8;">+'+xp+'</div><div style="font-size:0.65rem;color:#888;">XP Earned</div></div>'
       +'</div>'
     +'</div>'
     +'<div style="display:flex;gap:10px;">'
-      +'<button onclick="showDuelLobby()" style="flex:1;background:var(--gold);color:#000;border:none;border-radius:14px;padding:14px;font-weight:700;cursor:pointer;">⚔️ Duel Again</button>'
+      +'<button onclick="showDuelLobby()" style="flex:1;background:var(--gold);color:#000;border:none;border-radius:14px;padding:14px;font-weight:700;cursor:pointer;">⚔️ Play Again</button>'
       +'<button onclick="showSplash()" style="flex:1;background:transparent;border:2px solid var(--gold);color:var(--gold);border-radius:14px;padding:14px;font-weight:700;cursor:pointer;">🏠 Home</button>'
     +'</div>';
 }
 
+async function getUserXP(){
+  try{const {data}=await supa.from('user_stats').select('xp').eq('user_id',currentUser.id).single();return data?.xp||0;}catch(e){return 0;}
+}
+
 // ============================================================
-// LIVE QUIZ (Max 30 players)
+// LIVE QUIZ (Max 30 players) — FIXED VERSION
 // ============================================================
 const LIVE_QUIZ_MAX=30;
-// liveQuiz declared at top
 
 async function joinLiveQuizWaitRoom(){
   if(!currentUser){alert('Please log in.');return;}
-  updateLiveQuizCountdown();
-  setInterval(updateLiveQuizCountdown,1000);
+  // Check if quiz already active — join immediately
   try{
-    // Check if quiz already active
-    const {data:activeRoom}=await supa.from('live_quiz_rooms').select('*').eq('status','active').single();
+    const {data:activeRoom}=await supa.from('live_quiz_rooms').select('*').eq('status','active').maybeSingle();
     if(activeRoom){enterLiveQuizRoom(activeRoom);return;}
-    // Join waiting room
+  }catch(e){}
+
+  // Join waiting room — upsert presence
+  try{
     await supa.from('live_quiz_participants').upsert({
       room_id:'waiting',user_id:currentUser.id,user_name:currentUser.name,
-      score:0,correct:0,status:'waiting'
+      score:0,correct:0,streak:0,status:'waiting'
     },{onConflict:'room_id,user_id'});
-    loadWaitRoomParticipants();
-    subscribeToWaitRoom();
-  }catch(e){console.log('Join wait room error:',e);}
+  }catch(e){console.log('Wait room join error:',e);}
+
+  // Start countdown and load participants immediately
+  loadWaitRoomParticipants();
+  startWaitRoomCountdown();
+  subscribeToWaitRoom();
+}
+
+var _waitCountdownInterval=null;
+function startWaitRoomCountdown(){
+  clearInterval(_waitCountdownInterval);
+  _waitCountdownInterval=setInterval(()=>{
+    updateLiveQuizCountdown();
+    // Check if it's exactly noon — auto trigger for admin
+    const now=new Date();
+    if(now.getHours()===12&&now.getMinutes()===0&&now.getSeconds()===0){
+      if(currentUser?.is_admin) triggerLiveQuizStart();
+    }
+  },1000);
+  updateLiveQuizCountdown();
 }
 
 function updateLiveQuizCountdown(){
@@ -6793,40 +6863,64 @@ function updateLiveQuizCountdown(){
   const now=new Date();
   const noon=new Date();
   noon.setHours(12,0,0,0);
-  if(now>noon) noon.setDate(noon.getDate()+1);
-  const diff=noon-now;
+  if(now>=noon) noon.setDate(noon.getDate()+1);
+  const diff=Math.max(0,noon-now);
   const h=Math.floor(diff/3600000);
   const m=Math.floor((diff%3600000)/60000);
   const s=Math.floor((diff%60000)/1000);
   el.textContent=(h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
-  // Auto-start if it's exactly noon
-  const nowH=now.getHours(),nowM=now.getMinutes(),nowS=now.getSeconds();
-  if(nowH===12&&nowM===0&&nowS<3) triggerLiveQuizStart();
 }
 
 async function loadWaitRoomParticipants(){
   try{
-    const {data}=await supa.from('live_quiz_participants').select('*').eq('room_id','waiting').eq('status','waiting');
-    const participants=data||[];
-    const count=Math.min(participants.length,LIVE_QUIZ_MAX);
-    document.getElementById('lqParticipantCount').textContent=count+' / '+LIVE_QUIZ_MAX;
-    const list=document.getElementById('lqParticipantList');
-    list.innerHTML='';
-    participants.slice(0,LIVE_QUIZ_MAX).forEach(p=>{
-      const initials=p.user_name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-      const chip=document.createElement('div');
-      chip.className='lq-player-chip';
-      chip.innerHTML='<span style="background:#333;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;">'+initials+'</span>'+p.user_name.split(' ')[0];
-      list.appendChild(chip);
-    });
-  }catch(e){}
+    const {data,error}=await supa.from('live_quiz_participants').select('user_id,user_name,status').eq('room_id','waiting');
+    if(error)throw error;
+    const participants=(data||[]).slice(0,LIVE_QUIZ_MAX);
+    const countEl=document.getElementById('lqParticipantCount');
+    const listEl=document.getElementById('lqParticipantList');
+    if(countEl) countEl.textContent=participants.length+' / '+LIVE_QUIZ_MAX;
+    if(listEl){
+      listEl.innerHTML='';
+      participants.forEach(p=>{
+        const initials=p.user_name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+        const chip=document.createElement('div');
+        chip.className='lq-player-chip';
+        const isMe=p.user_id===currentUser?.id;
+        chip.style.borderColor=isMe?'var(--gold)':'#333';
+        chip.innerHTML='<span style="background:'+(isMe?'var(--gold)':'#333')+';color:'+(isMe?'#000':'#fff')+';border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;flex-shrink:0;">'+initials+'</span>'
+          +'<span style="font-size:0.75rem;color:'+(isMe?'var(--gold)':'var(--white)')+';">'+p.user_name.split(' ')[0]+(isMe?' (You)':'')+'</span>';
+        listEl.appendChild(chip);
+      });
+    }
+  }catch(e){console.log('Load wait participants error:',e);}
 }
 
 function subscribeToWaitRoom(){
-  supa.channel('wait_room_live')
-    .on('postgres_changes',{event:'*',schema:'public',table:'live_quiz_participants',filter:'room_id=eq.waiting'},()=>{loadWaitRoomParticipants();})
-    .on('postgres_changes',{event:'*',schema:'public',table:'live_quiz_rooms'},(payload)=>{
-      if(payload.new?.status==='active') enterLiveQuizRoom(payload.new);
+  // Listen for participant changes
+  supa.channel('wait_participants_'+Date.now())
+    .on('postgres_changes',{event:'*',schema:'public',table:'live_quiz_participants'},(payload)=>{
+      if(payload.new?.room_id==='waiting'||payload.old?.room_id==='waiting'){
+        loadWaitRoomParticipants();
+      }
+    }).subscribe();
+
+  // Listen for quiz room being created (when admin starts it)
+  supa.channel('wait_quiz_room_'+Date.now())
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'live_quiz_rooms'},(payload)=>{
+      if(payload.new&&payload.new.status==='active'){
+        clearInterval(_waitCountdownInterval);
+        showToast('⚡ QUIZ IS STARTING NOW!',2000);
+        playSound('win');
+        setTimeout(()=>enterLiveQuizRoom(payload.new),1000);
+      }
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'live_quiz_rooms'},(payload)=>{
+      if(payload.new&&payload.new.status==='active'){
+        clearInterval(_waitCountdownInterval);
+        showToast('⚡ QUIZ IS STARTING NOW!',2000);
+        playSound('win');
+        setTimeout(()=>enterLiveQuizRoom(payload.new),500);
+      }
     }).subscribe();
 }
 
@@ -6835,73 +6929,75 @@ async function sendWaitRoomChat(){
   const text=(input.value||'').trim();
   if(!text||!currentUser)return;
   input.value='';
+  const chat=document.getElementById('lqWaitChat');
+  const div=document.createElement('div');
+  div.style.cssText='font-size:0.78rem;padding:2px 0;';
+  div.innerHTML='<b style="color:var(--gold);">'+currentUser.name.split(' ')[0]+':</b> '+text.replace(/</g,'&lt;');
+  if(chat){chat.appendChild(div);chat.scrollTop=chat.scrollHeight;}
   try{
     await supa.from('messages').insert([{
       sender_id:currentUser.id,sender_name:currentUser.name,
       content:text,is_group:true,group_name:'liveQuizWait'
     }]);
-    // Show optimistically
-    const chat=document.getElementById('lqWaitChat');
-    const div=document.createElement('div');
-    div.style.cssText='font-size:0.78rem;';
-    div.innerHTML='<b style="color:var(--gold);">You:</b> '+text.replace(/</g,'&lt;');
-    chat.appendChild(div);
-    chat.scrollTop=chat.scrollHeight;
   }catch(e){}
 }
 
 async function triggerLiveQuizStart(){
-  if(!currentUser?.is_admin) return; // Only admin triggers (or auto at noon)
+  // Build 10 questions
   const allQ=[];
   Object.values(QB).forEach(qs=>allQ.push(...qs));
   allQ.sort(()=>Math.random()-0.5);
-  const questions=allQ.slice(0,10);
+  const questions=allQ.slice(0,10).map(q=>({q:q.q,opts:q.opts,ans:q.ans,explanation:q.explanation||''}));
   try{
-    await supa.from('live_quiz_rooms').insert([{
+    const {data,error}=await supa.from('live_quiz_rooms').insert([{
       status:'active',
       questions:JSON.stringify(questions),
       current_question:0,
       max_participants:LIVE_QUIZ_MAX,
       started_at:new Date().toISOString()
-    }]);
-  }catch(e){}
+    }]).select().single();
+    if(error)throw error;
+    // Move all waiting participants to this room
+    await supa.from('live_quiz_participants').update({room_id:data.id,status:'active'}).eq('room_id','waiting');
+    showToast('⚡ Live Quiz started for all participants!');
+  }catch(e){alert('Could not start quiz: '+e.message);}
 }
 
 async function enterLiveQuizRoom(room){
   if(liveQuiz.ended)return;
+  clearInterval(_waitCountdownInterval);
   liveQuiz.roomId=room.id;
-  liveQuiz.questions=JSON.parse(room.questions||'[]');
+  try{liveQuiz.questions=JSON.parse(room.questions||'[]');}catch(e){liveQuiz.questions=[];}
   liveQuiz.currentQ=room.current_question||0;
   liveQuiz.score=0;liveQuiz.correct=0;liveQuiz.ended=false;liveQuiz.participants={};
-  hideAll();
-  document.getElementById('liveQuizRoomScreen').style.display='flex';
-  setThemeToggleVisible(false);
+
+  if(!liveQuiz.questions.length){
+    alert('Quiz has no questions yet. Please wait.');return;
+  }
+
   // Join as participant
   try{
     await supa.from('live_quiz_participants').upsert({
       room_id:room.id,user_id:currentUser.id,user_name:currentUser.name,
-      score:0,correct:0,status:'active'
+      score:0,correct:0,streak:0,status:'active'
     },{onConflict:'room_id,user_id'});
   }catch(e){}
+
+  hideAll();
+  document.getElementById('liveQuizRoomScreen').style.display='flex';
+  setThemeToggleVisible(false);
   subscribeLiveQuizRoom();
   renderLiveQuizQuestion(liveQuiz.currentQ);
 }
 
 function subscribeLiveQuizRoom(){
   if(liveQuiz.channel){try{supa.removeChannel(liveQuiz.channel);}catch(e){}}
-  liveQuiz.channel=supa.channel('live_quiz_room_'+liveQuiz.roomId)
-    .on('postgres_changes',{event:'*',schema:'public',table:'live_quiz_participants',filter:'room_id=eq.'+liveQuiz.roomId},()=>{updateLQMiniLeaderboard();})
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'live_quiz_rooms',filter:'id=eq.'+liveQuiz.roomId},(payload)=>{
-      if(payload.new.current_question!==liveQuiz.currentQ){
-        liveQuiz.currentQ=payload.new.current_question;
-        if(liveQuiz.currentQ>=liveQuiz.questions.length) endLiveQuiz();
-        else renderLiveQuizQuestion(liveQuiz.currentQ);
-      }
-      if(payload.new.status==='ended') endLiveQuiz();
+  liveQuiz.channel=supa.channel('lq_room_'+liveQuiz.roomId+'_'+Date.now())
+    .on('postgres_changes',{event:'*',schema:'public',table:'live_quiz_participants',filter:'room_id=eq.'+liveQuiz.roomId},()=>{
+      updateLQMiniLeaderboard();
     }).subscribe();
 }
 
-// _lqTimerInterval declared at top
 function renderLiveQuizQuestion(idx){
   if(idx>=liveQuiz.questions.length){endLiveQuiz();return;}
   clearInterval(_lqTimerInterval);
@@ -6913,59 +7009,69 @@ function renderLiveQuizQuestion(idx){
   const opts=document.getElementById('lqOptions');
   opts.innerHTML='';
   const lbls=['A','B','C','D','E'];
-  let answered=false;
+  var lqAnswered=false;
+  var lqTimeLeft=18; // 18 seconds per question same as duel
+  var lqQuestionStart=Date.now();
   const optArr=q.opts||['True','False','Maybe','None'];
   optArr.forEach((o,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn';
     btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span>'+o+'</span>';
     btn.onclick=async()=>{
-      if(answered)return;
-      answered=true;
+      if(lqAnswered)return;
+      lqAnswered=true;
+      clearInterval(_lqTimerInterval);
       const correct=i===(q.ans||0);
-      const timeBonus=Math.floor(liveQuiz.timePerQ-_lqTimeLeft);
-      const pts=correct?(10+Math.max(0,5-timeBonus)):0;
+      const timeUsed=(Date.now()-lqQuestionStart)/1000;
+      const timeFrac=Math.max(0,(18-timeUsed)/18);
+      const timeBonus=correct?parseFloat((timeFrac*2).toFixed(2)):0;
+      const pts=correct?(8+timeBonus):0;
+      const roundedPts=Math.round(pts);
       if(correct){liveQuiz.score+=pts;liveQuiz.correct++;playSound('correct');}
-      else{playSound('wrong');}
+      else playSound('wrong');
       btn.classList.add(correct?'correct':'wrong');
-      opts.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+      opts.querySelectorAll('.option-btn').forEach((b,bi)=>{
+        b.disabled=true;
+        if(bi===(q.ans||0)) b.classList.add('correct');
+      });
       const fb=document.getElementById('lqFeedback');
-      fb.innerHTML=(correct?'✅ Correct! +'+pts+' pts':'❌ Wrong! Answer was '+lbls[q.ans||0])+
-        (q.explanation?'<br><small>'+q.explanation+'</small>':'');
+      fb.innerHTML=(correct?'✅ Correct! +8 pts + <span style="color:#ffc107;">+'+timeBonus.toFixed(1)+' speed</span> = <b>'+roundedPts+' pts</b>'
+        :'❌ Wrong! 0 pts. Correct: '+lbls[q.ans||0])
+        +(q.explanation?'<br><small style="color:#aaa;">'+q.explanation+'</small>':'');
       fb.style.display='block';
-      fb.style.background=correct?'rgba(40,167,69,0.15)':'rgba(220,53,69,0.15)';
+      fb.style.background=correct?'rgba(40,167,69,0.15)':'rgba(220,53,69,0.12)';
       fb.style.border='1px solid '+(correct?'var(--correct)':'var(--wrong)');
-      // Update score in DB
-      try{await supa.from('live_quiz_participants').update({score:liveQuiz.score,correct:liveQuiz.correct}).eq('room_id',liveQuiz.roomId).eq('user_id',currentUser.id);}catch(e){}
+      try{await supa.from('live_quiz_participants').update({score:Math.round(liveQuiz.score),correct:liveQuiz.correct}).eq('room_id',liveQuiz.roomId).eq('user_id',currentUser.id);}catch(e){}
+      updateLQMiniLeaderboard();
     };
     opts.appendChild(btn);
   });
-  // Timer
-  let _lqTimeLeft=liveQuiz.timePerQ;
-  window._lqTimeLeft=_lqTimeLeft;
+
+  // 18-second timer per question
   const timerEl=document.getElementById('lqTimer');
   const timerBar=document.getElementById('lqTimerBar');
-  timerEl.textContent=_lqTimeLeft;
-  timerBar.style.width='100%';
+  timerEl.textContent=lqTimeLeft;timerEl.style.color='';
+  timerBar.style.width='100%';timerBar.style.transition='width 1s linear';
   _lqTimerInterval=setInterval(()=>{
-    _lqTimeLeft--;
-    window._lqTimeLeft=_lqTimeLeft;
-    timerEl.textContent=_lqTimeLeft;
-    timerBar.style.width=(_lqTimeLeft/liveQuiz.timePerQ*100)+'%';
-    if(_lqTimeLeft<=5){timerEl.style.color='#dc3545';playSound('tick');}
-    if(_lqTimeLeft<=0){
+    lqTimeLeft--;
+    timerEl.textContent=lqTimeLeft;
+    timerBar.style.width=(lqTimeLeft/18*100)+'%';
+    if(lqTimeLeft<=5){timerEl.style.color='#dc3545';playSound('tick');}
+    if(lqTimeLeft<=0){
       clearInterval(_lqTimerInterval);
-      // Disable all options
-      opts.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
-      if(!answered){
+      opts.querySelectorAll('.option-btn').forEach((b,bi)=>{
+        b.disabled=true;
+        if(bi===(q.ans||0)) b.classList.add('correct');
+      });
+      if(!lqAnswered){
         const fb=document.getElementById('lqFeedback');
-        fb.innerHTML='⏰ Time up!';fb.style.display='block';fb.style.background='rgba(220,53,69,0.1)';fb.style.border='1px solid var(--wrong)';
+        fb.innerHTML='⏰ Time up! Correct: '+lbls[q.ans||0];
+        fb.style.display='block';fb.style.background='rgba(220,53,69,0.1)';fb.style.border='1px solid var(--wrong)';
       }
-      // Auto advance after 2s
       setTimeout(()=>{
         timerEl.style.color='';
         renderLiveQuizQuestion(idx+1);
-      },2000);
+      },1800);
     }
   },1000);
   updateLQMiniLeaderboard();
