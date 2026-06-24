@@ -6587,10 +6587,16 @@ function hashStr(str){
 // Per-question 18-second timer (replaces overall duel timer)
 var duelQTimer=null;
 var duelQTimeLeft=18;
+var duelMyAnswered=false;   // did I answer current question?
+var duelOppAnswered=false;  // did opponent answer current question?
+var duelWaitingToAdvance=false; // answered, now waiting for opponent or timer
 
 function startDuelQuestionTimer(idx){
   clearInterval(duelQTimer);
   duelQTimeLeft=18;
+  duelMyAnswered=false;
+  duelOppAnswered=false;
+  duelWaitingToAdvance=false;
   duelState.questionStartTime[idx]=Date.now();
   updateDuelTimerDisplay();
   duelQTimer=setInterval(()=>{
@@ -6598,8 +6604,8 @@ function startDuelQuestionTimer(idx){
     updateDuelTimerDisplay();
     if(duelQTimeLeft<=0){
       clearInterval(duelQTimer);
-      // Auto-advance: no answer = 0 marks
-      autoAdvanceDuel(idx);
+      // Time is up for this question — advance regardless of who answered
+      advanceDuelQuestion(idx);
     }
   },1000);
 }
@@ -6612,15 +6618,41 @@ function updateDuelTimerDisplay(){
   el.className='timer'+(t<=5?' danger':t<=10?' warn':'');
 }
 
-// Overwrite startDuelTimer to do nothing (we use per-question timers now)
-function startDuelTimer(){}
+function startDuelTimer(){} // no-op — using per-question timer now
+
+// Called when BOTH players answered OR timer expired
+function advanceDuelQuestion(idx){
+  clearInterval(duelQTimer);
+  // Show correct answer briefly before advancing
+  const q=duelState.questions[idx];
+  if(q){
+    const opts=document.getElementById('duelOptions');
+    if(opts){
+      opts.querySelectorAll('.option-btn').forEach((btn,i)=>{
+        btn.disabled=true;
+        if(i===q.ans) btn.classList.add('correct');
+      });
+    }
+  }
+  // Remove waiting indicator
+  const waitEl=document.getElementById('duelWaitMsg');
+  if(waitEl) waitEl.remove();
+
+  setTimeout(()=>{
+    if(idx+1<duelState.questions.length) renderDuelQuestion(idx+1);
+    else endDuel(false);
+  },1000);
+}
 
 function autoAdvanceDuel(idx){
-  // Mark as unanswered, show correct answer, advance
+  // Timer ran out — mark as unanswered, show answer, advance
+  if(duelState.answers[idx]===undefined){
+    duelState.answers[idx]=-1;
+  }
+  duelMyAnswered=true;
+  // Show correct answer
   const q=duelState.questions[idx];
-  if(q&&duelState.answers[idx]===undefined){
-    duelState.answers[idx]=-1; // unanswered
-    // Show correct answer briefly
+  if(q){
     const opts=document.getElementById('duelOptions');
     if(opts){
       opts.querySelectorAll('.option-btn').forEach((btn,i)=>{
@@ -6629,12 +6661,10 @@ function autoAdvanceDuel(idx){
       });
     }
     const exp=document.getElementById('duelExplanation');
-    if(exp){exp.innerHTML='⏰ Time up! Correct answer highlighted.';exp.style.display='block';exp.style.background='rgba(255,193,7,0.15)';exp.style.border='1px solid #ffc107';}
+    if(exp){exp.innerHTML='⏰ Time up! Correct: '+'ABCDE'[q.ans];exp.style.display='block';exp.style.background='rgba(255,193,7,0.15)';exp.style.border='1px solid #ffc107';}
   }
-  setTimeout(()=>{
-    if(idx+1<duelState.questions.length) renderDuelQuestion(idx+1);
-    else endDuel(false);
-  },1200);
+  // Advance immediately (timer already expired — both must advance)
+  advanceDuelQuestion(idx);
 }
 
 function renderDuelQuestion(idx){
@@ -6668,51 +6698,51 @@ function renderDuelQuestion(idx){
 }
 
 async function submitDuelAnswer(optIdx,questionIdx){
-  if(duelState.answers[questionIdx]!==undefined) return;
-  clearInterval(duelQTimer);
+  if(duelMyAnswered) return; // already answered this question
+  clearInterval(duelQTimer); // stop timer — we handle advance manually
   const idx=questionIdx!==undefined?questionIdx:duelState.index;
   const q=duelState.questions[idx];
   const correct=optIdx===q.ans;
 
-  // SCORING: 8 marks for correct answer + up to 2 marks for speed
-  // Time bonus: 2 marks × (timeLeft/18). If wrong, 0 marks total.
+  // SCORING: 8 marks correct + up to 2 speed bonus
   const timeUsedSecs=18-duelQTimeLeft;
-  const timeFraction=Math.max(0,(18-timeUsedSecs)/18); // 1.0 at instant, 0 at timeout
+  const timeFraction=Math.max(0,(18-timeUsedSecs)/18);
   const timeBonus=correct?parseFloat((timeFraction*2).toFixed(2)):0;
   const questionScore=correct?(8+timeBonus):0;
-  const roundedScore=Math.round(questionScore);
 
   duelState.answers[idx]=optIdx;
   duelState.score=parseFloat((duelState.score+questionScore).toFixed(2));
+  duelMyAnswered=true;
 
-  // Update display
+  // Update my score display
   document.getElementById('duelMyScore').textContent=Math.round(duelState.score);
-  const answered=Object.keys(duelState.answers).length;
-  const correct_count=Object.values(duelState.answers).filter((a,i)=>a===duelState.questions[i]?.ans).length;
+  const answered=Object.keys(duelState.answers).filter(k=>duelState.answers[k]!==-1).length;
+  const correct_count=Object.entries(duelState.answers).filter(([i,a])=>parseInt(a)===duelState.questions[parseInt(i)]?.ans).length;
   const acc=answered>0?Math.round(correct_count/answered*100):0;
   document.getElementById('duelMyAcc').textContent=acc+'% acc';
 
-  // Visual feedback
+  // Disable all options and show correct/wrong
   const opts=document.getElementById('duelOptions');
   opts.querySelectorAll('.option-btn').forEach((btn,i)=>{
     btn.disabled=true;
     if(i===q.ans) btn.classList.add('correct');
     else if(i===optIdx) btn.classList.add('wrong');
   });
-  if(correct) playSound('correct');
-  else playSound('wrong');
+  if(correct) playSound('correct'); else playSound('wrong');
 
+  // Show explanation
   const exp=document.getElementById('duelExplanation');
   if(exp){
-    exp.innerHTML=(correct?'✅ Correct! +8 pts + ':'❌ Wrong! 0 pts. ')
-      +(correct?'<span style="color:#ffc107;">+'+timeBonus.toFixed(1)+' speed bonus</span> = <b>'+roundedScore+' pts</b>':'Correct: '+['A','B','C','D','E'][q.ans])
+    exp.innerHTML=(correct
+      ?'✅ Correct! +8 pts + <span style="color:#ffc107;">+'+timeBonus.toFixed(1)+' speed</span> = <b>'+Math.round(questionScore)+' pts</b>'
+      :'❌ Wrong! 0 pts. Correct: '+'ABCDE'[q.ans])
       +(q.explanation?'<br><small style="color:#aaa;">'+q.explanation+'</small>':'');
     exp.style.display='block';
     exp.style.background=correct?'rgba(40,167,69,0.15)':'rgba(220,53,69,0.12)';
     exp.style.border='1px solid '+(correct?'var(--correct)':'var(--wrong)');
   }
 
-  // Push answer to Supabase for opponent's live score update
+  // Push answer to Supabase — opponent's realtime listener will detect this
   try{
     await supa.from('duel_answers').insert([{
       room_id:duelState.roomId,user_id:currentUser.id,
@@ -6720,11 +6750,33 @@ async function submitDuelAnswer(optIdx,questionIdx){
     }]);
   }catch(e){}
 
-  // Auto-advance after 1.5s
-  setTimeout(()=>{
-    if(idx+1<duelState.questions.length) renderDuelQuestion(idx+1);
-    else endDuel(false);
-  },1500);
+  // Show "waiting for opponent" indicator if they haven't answered yet
+  if(!duelOppAnswered){
+    duelWaitingToAdvance=true;
+    // Remove old wait message if exists
+    const old=document.getElementById('duelWaitMsg');
+    if(old) old.remove();
+    const waitDiv=document.createElement('div');
+    waitDiv.id='duelWaitMsg';
+    waitDiv.style.cssText='text-align:center;color:#ffc107;font-size:0.82rem;font-weight:700;padding:10px;margin-top:8px;background:rgba(255,193,7,0.1);border:1px solid #ffc107;border-radius:10px;';
+    waitDiv.innerHTML='⏳ Waiting for <b>'+duelState.opponentName.split(' ')[0]+'</b> to answer... <span id="duelWaitCount">'+duelQTimeLeft+'s left</span>';
+    document.getElementById('duelOptions').after(waitDiv);
+    // Resume timer countdown display only (no auto-advance until timer hits 0)
+    duelQTimer=setInterval(()=>{
+      duelQTimeLeft--;
+      const wc=document.getElementById('duelWaitCount');
+      if(wc) wc.textContent=duelQTimeLeft+'s left';
+      updateDuelTimerDisplay();
+      if(duelQTimeLeft<=0){
+        clearInterval(duelQTimer);
+        // Timer expired while waiting — advance now
+        advanceDuelQuestion(idx);
+      }
+    },1000);
+  } else {
+    // Opponent already answered — both done, advance immediately
+    advanceDuelQuestion(idx);
+  }
 }
 
 function subscribeToDuelRoom(){
@@ -6732,17 +6784,44 @@ function subscribeToDuelRoom(){
   if(_duelChannel){try{supa.removeChannel(_duelChannel);}catch(e){}}
   _duelChannel=supa.channel('duel_live_'+duelState.roomId+'_'+Date.now())
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'duel_answers'},(payload)=>{
-      if(payload.new&&payload.new.user_id!==currentUser.id){
-        // Update opponent score live
-        supa.from('duel_answers').select('score,correct').eq('room_id',duelState.roomId).eq('user_id',duelState.opponentId)
-          .then(({data})=>{
-            if(!data)return;
-            const oppTotal=data.reduce((s,r)=>s+(r.score||0),0);
-            const oppCorrect=data.filter(r=>r.correct).length;
-            duelState.oppScore=oppTotal;
-            document.getElementById('duelOppScore').textContent=Math.round(oppTotal);
-            document.getElementById('duelOppAcc').textContent=Math.round(oppCorrect/data.length*100)+'% acc';
-          });
+      if(!payload.new||payload.new.user_id===currentUser.id) return;
+      const oppAnswer=payload.new;
+
+      // Update opponent live score display
+      supa.from('duel_answers')
+        .select('score,correct,question_index')
+        .eq('room_id',duelState.roomId)
+        .eq('user_id',duelState.opponentId)
+        .then(({data})=>{
+          if(!data)return;
+          const oppTotal=data.reduce((s,r)=>s+(r.score||0),0);
+          const oppCorrect=data.filter(r=>r.correct).length;
+          duelState.oppScore=oppTotal;
+          const oppScoreEl=document.getElementById('duelOppScore');
+          const oppAccEl=document.getElementById('duelOppAcc');
+          if(oppScoreEl) oppScoreEl.textContent=Math.round(oppTotal);
+          if(oppAccEl) oppAccEl.textContent=(data.length>0?Math.round(oppCorrect/data.length*100):0)+'% acc';
+        });
+
+      // KEY FIX: if opponent answered the CURRENT question we're waiting on
+      if(oppAnswer.question_index===duelState.index){
+        duelOppAnswered=true;
+        // If I already answered (waiting), advance now
+        if(duelMyAnswered&&duelWaitingToAdvance){
+          clearInterval(duelQTimer);
+          duelWaitingToAdvance=false;
+          // Show brief "Opponent answered!" then advance
+          const waitEl=document.getElementById('duelWaitMsg');
+          if(waitEl){
+            waitEl.innerHTML='✅ '+duelState.opponentName.split(' ')[0]+' answered! Advancing...';
+            waitEl.style.color='#28a745';
+            waitEl.style.borderColor='#28a745';
+            waitEl.style.background='rgba(40,167,69,0.1)';
+          }
+          setTimeout(()=>advanceDuelQuestion(duelState.index),700);
+        }
+        // If I haven't answered yet — note that opp answered, question timer
+        // will still run for me until I answer or 18s expires
       }
     }).subscribe();
 }
