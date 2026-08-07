@@ -10,7 +10,7 @@
      confident blue accent, replacing the previous neon-gold gaming look.
      Dark mode (toggle) keeps a muted slate-navy instead of the old bright
      gold-on-navy combination. */
-  :root { --green:#0f5132;--gold:#2563eb;--dark:#f7f8fa;--card:#ffffff;--accent:#eef2ff;--text:#1f2430;--white:#1f2430;--correct:#16a34a;--wrong:#dc2626;--warn:#d97706;--input-bg:#ffffff;--input-border:#d7dbe3; --line:#e3e6ec; --muted:#68707e; }
+  :root { --green:#0f5132;--gold:#0f766e;--dark:#f7f8fa;--card:#ffffff;--accent:#eef2ff;--text:#1f2430;--white:#1f2430;--correct:#16a34a;--wrong:#dc2626;--warn:#d97706;--input-bg:#ffffff;--input-border:#d7dbe3; --line:#e3e6ec; --muted:#68707e; }
   html[data-theme="dark"] { --dark:#12161f;--card:#1a2030;--accent:#212a3f;--text:#e6e9ef;--white:#ffffff;--input-bg:#0d1117;--input-border:#2b3244; --line:#2b3244; --muted:#9aa2b1; }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--dark);color:var(--text);min-height:100vh;transition:background 0.2s,color 0.2s;}
@@ -34,8 +34,8 @@
   .ac-msg{color:#ccc;font-size:1rem;line-height:1.6;margin-bottom:24px;max-width:500px;}
   .ac-countdown{color:var(--gold);font-size:2.5rem;font-weight:900;margin-bottom:20px;}
   .ac-dismiss{background:var(--wrong);color:#fff;border:none;border-radius:20px;padding:12px 36px;font-size:1rem;font-weight:700;cursor:pointer;}
-  #splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a 0%,#1e293b 60%,#0f172a 100%);padding:20px;text-align:center;}
-  #splash .logo{width:110px;height:110px;border-radius:50%;border:4px solid var(--gold);background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 0 30px rgba(37,99,235,0.5);}
+  #splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--dark);padding:20px;text-align:center;}
+  #splash .logo{width:110px;height:110px;border-radius:50%;border:4px solid var(--gold);background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 0 30px rgba(15,118,110,0.5);}
   #splash .logo span{font-size:48px;}
   #splash h1{color:var(--gold);font-size:2rem;text-shadow:0 2px 8px rgba(0,0,0,0.5);margin-bottom:4px;}
   #splash h2{color:#fff;font-size:1.1rem;font-weight:400;margin-bottom:6px;}
@@ -44,8 +44,8 @@
   .stat-box{background:rgba(255,255,255,0.1);border:1px solid var(--gold);border-radius:10px;padding:12px 20px;text-align:center;}
   .stat-box .num{font-size:1.8rem;font-weight:700;color:var(--gold);}
   .stat-box .lbl{font-size:0.75rem;color:#ccc;}
-  #splash .start-btn{background:var(--gold);color:var(--dark);font-size:1.1rem;font-weight:700;border:none;border-radius:30px;padding:14px 50px;cursor:pointer;box-shadow:0 4px 15px rgba(37,99,235,0.4);transition:transform 0.2s,box-shadow 0.2s;margin-bottom:14px;}
-  #splash .start-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,99,235,0.6);}
+  #splash .start-btn{background:var(--gold);color:var(--dark);font-size:1.1rem;font-weight:700;border:none;border-radius:30px;padding:14px 50px;cursor:pointer;box-shadow:0 4px 15px rgba(15,118,110,0.4);transition:transform 0.2s,box-shadow 0.2s;margin-bottom:14px;}
+  #splash .start-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(15,118,110,0.6);}
   .history-btn{background:transparent;border:2px solid var(--gold);color:var(--gold);font-size:0.95rem;border-radius:20px;padding:8px 28px;cursor:pointer;transition:0.2s;}
   .history-btn:hover{background:var(--gold);color:#000;}
   #subjectSelect{display:none;flex-direction:column;align-items:center;min-height:100vh;padding:30px 20px;background:var(--dark);}
@@ -60,35 +60,46 @@
   .mix-btn{background:linear-gradient(135deg,var(--green),var(--gold));color:#fff;font-size:1rem;font-weight:700;border:none;border-radius:30px;padding:12px 40px;cursor:pointer;margin-bottom:14px;}
   .back-btn{background:transparent;border:1px solid #555;color:#aaa;font-size:0.85rem;border-radius:20px;padding:8px 24px;cursor:pointer;}
   #quiz{display:none;flex-direction:column;min-height:100vh;background:var(--dark);}
-  .quiz-header{background:var(--card);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #333;position:sticky;top:0;z-index:10;}
-  .quiz-header .subject-badge{background:var(--accent);color:var(--gold);font-size:0.75rem;font-weight:700;border-radius:20px;padding:4px 12px;text-transform:uppercase;letter-spacing:1px;}
-  .quiz-header .q-counter{color:#ccc;font-size:0.85rem;}
-  .quiz-header .timer{background:var(--dark);border:2px solid var(--gold);color:var(--gold);font-size:1rem;font-weight:700;border-radius:20px;padding:5px 14px;min-width:70px;text-align:center;}
+  .quiz-header{background:var(--card);padding:10px 16px 0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;}
+  .quiz-icons-row{display:flex;align-items:center;gap:10px;padding-bottom:10px;}
+  .icon-circle-btn{width:38px;height:38px;border-radius:50%;background:var(--accent);border:1px solid var(--line);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
+  .icon-circle-btn.flagged{border-color:var(--warn);color:var(--warn);background:rgba(217,119,6,0.1);}
+  .icon-circle-btn.active-map{border-color:var(--gold);color:var(--gold);background:rgba(15,118,110,0.1);}
+  .quiz-icons-row .spacer{flex:1;}
+  .timer{background:rgba(217,119,6,0.08);border:1.5px solid var(--warn);color:var(--warn);font-size:0.95rem;font-weight:700;border-radius:20px;padding:6px 16px;min-width:76px;text-align:center;}
   .timer.warn{border-color:var(--warn);color:var(--warn);animation:pulse 1s infinite;}
-  .timer.danger{border-color:var(--wrong);color:var(--wrong);animation:pulse 0.5s infinite;}
+  .timer.danger{border-color:var(--wrong);color:var(--wrong);animation:pulse 0.5s infinite;background:rgba(220,38,38,0.08);}
+  .quiz-header .subject-badge{display:inline-block;background:none;color:var(--correct);font-size:0.85rem;font-weight:700;padding:2px 2px 8px;border-bottom:2.5px solid var(--correct);text-transform:none;letter-spacing:normal;}
+  .quiz-progress-row{display:flex;align-items:center;gap:10px;padding:12px 0;}
+  .q-counter{flex:1;background:var(--accent);border:1px solid var(--line);color:var(--text);font-size:0.9rem;font-weight:600;border-radius:22px;padding:9px 18px;text-align:center;}
+  .quiz-next-chev{width:36px;height:36px;border-radius:50%;background:var(--correct);color:#fff;border:none;font-size:1.1rem;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
-  .progress-bar{height:4px;background:#333;}
-  .progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--gold));transition:width 0.3s;}
-  .quiz-body{flex:1;padding:24px 20px;max-width:720px;width:100%;margin:0 auto;}
-  .q-number{font-size:0.75rem;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
-  .q-text{font-size:1.05rem;color:var(--white);line-height:1.6;margin-bottom:22px;background:var(--card);border-radius:12px;padding:18px;border-left:4px solid var(--gold);}
-  .options{display:flex;flex-direction:column;gap:12px;}
-  .option-btn{background:var(--card);border:2px solid #333;border-radius:12px;padding:14px 18px;text-align:left;color:var(--text);font-size:0.95rem;cursor:pointer;transition:0.2s;display:flex;align-items:center;gap:12px;}
-  .option-btn:hover:not(:disabled){border-color:var(--gold);background:rgba(37,99,235,0.07);}
-  .option-btn .opt-label{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;color:var(--gold);flex-shrink:0;}
-  .option-btn.correct{border-color:var(--correct);background:rgba(40,167,69,0.15);}
-  .option-btn.correct .opt-label{background:var(--correct);color:#fff;}
-  .option-btn.wrong{border-color:var(--wrong);background:rgba(220,53,69,0.15);}
-  .option-btn.wrong .opt-label{background:var(--wrong);color:#fff;}
+  .progress-bar{height:4px;background:var(--line);}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--correct),var(--gold));transition:width 0.3s;}
+  .quiz-body{flex:1;padding:22px 20px 90px;max-width:720px;width:100%;margin:0 auto;}
+  .q-number{font-size:0.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;}
+  .q-text{font-size:1.02rem;color:var(--text);line-height:1.6;margin-bottom:22px;}
+  .options{display:flex;flex-direction:column;gap:10px;}
+  .option-btn{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:13px 16px;text-align:left;color:var(--text);font-size:0.95rem;cursor:pointer;transition:0.15s;display:flex;align-items:center;gap:12px;}
+  .option-btn:hover:not(:disabled){border-color:var(--gold);}
+  .option-btn .opt-label{width:22px;font-weight:700;font-size:0.82rem;color:var(--muted);flex-shrink:0;}
+  .option-btn .opt-radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0;position:relative;}
+  .option-btn.selected .opt-radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--gold);}
+  .option-btn.correct{border-color:var(--correct);background:rgba(22,163,74,0.08);}
+  .option-btn.correct .opt-radio{border-color:var(--correct);}
+  .option-btn.correct .opt-radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--correct);}
+  .option-btn.wrong{border-color:var(--wrong);background:rgba(220,38,38,0.08);}
+  .option-btn.wrong .opt-radio{border-color:var(--wrong);}
+  .option-btn.wrong .opt-radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--wrong);}
   .option-btn:disabled{cursor:default;}
-  .explanation{margin-top:16px;background:rgba(37,99,235,0.07);border:1px solid var(--gold);border-radius:10px;padding:14px;font-size:0.85rem;color:#ddd;line-height:1.5;}
+  .explanation{margin-top:16px;background:var(--accent);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:0.85rem;color:var(--text);line-height:1.5;}
   .explanation strong{color:var(--gold);}
   .nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-bottom:30px;}
-  .nav-btn{background:var(--accent);border:none;color:#fff;border-radius:10px;padding:10px 22px;cursor:pointer;font-size:0.9rem;transition:0.2s;}
-  .nav-btn:hover{background:var(--gold);color:#000;}
+  .nav-btn{background:var(--accent);border:1px solid var(--line);color:var(--text);border-radius:22px;padding:10px 22px;cursor:pointer;font-size:0.9rem;transition:0.2s;}
+  .nav-btn:hover{border-color:var(--gold);}
   .nav-btn:disabled{opacity:0.3;cursor:default;}
-  .submit-btn{background:var(--green);border:none;color:#fff;border-radius:10px;padding:10px 22px;cursor:pointer;font-size:0.9rem;font-weight:700;transition:0.2s;}
-  .submit-btn:hover{background:#008000;}
+  .submit-btn{background:#ea580c;border:none;color:#fff;border-radius:22px;padding:10px 24px;cursor:pointer;font-size:0.9rem;font-weight:700;transition:0.2s;}
+  .submit-btn:hover{background:#c2410c;}
   .flag-btn{background:transparent;border:1px solid #555;color:#aaa;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:0.8rem;}
   .flag-btn.flagged{border-color:var(--warn);color:var(--warn);}
   .q-map{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:2px solid #333;max-height:50vh;overflow-y:auto;padding:16px;z-index:20;}
@@ -151,8 +162,7 @@
   .streak-badge{background:linear-gradient(135deg,#ff6b35,#f7c59f);color:#000;border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;display:inline-block;margin-bottom:16px;}
   @media(max-width:480px){#splash h1{font-size:1.5rem;}.q-text{font-size:0.95rem;padding:14px;}.option-btn{padding:12px 14px;font-size:0.88rem;}.subject-grid{grid-template-columns:repeat(2,1fr);}}
 
-  .option-btn.selected { border-color: var(--gold); background: rgba(37,99,235,0.12); }
-  .option-btn.selected .opt-label { background: var(--gold); color: #000; }
+  .option-btn.selected { border-color: var(--gold); background: rgba(15,118,110,0.06); }
 
   /* ===== SCIENTIFIC CALCULATOR ===== */
   #calcOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:8000;align-items:flex-end;justify-content:center;}
@@ -186,7 +196,7 @@
   .inv-indicator{background:#d2a8ff22;color:#d2a8ff;font-size:0.65rem;padding:2px 8px;border-radius:10px;display:none;margin-left:8px;}
   .inv-indicator.show{display:inline-block;}
   .deg-indicator{background:#79c0ff22;color:#79c0ff;font-size:0.65rem;padding:2px 8px;border-radius:10px;margin-left:4px;}
-  .calc-btn-float{position:fixed;bottom:80px;right:18px;background:var(--gold);color:#000;border:none;border-radius:50%;width:52px;height:52px;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 18px rgba(37,99,235,0.5);z-index:7000;display:none;}
+  .calc-btn-float{position:fixed;bottom:80px;right:18px;background:var(--gold);color:#000;border:none;border-radius:50%;width:52px;height:52px;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 18px rgba(15,118,110,0.5);z-index:7000;display:none;}
   .calc-btn-float.visible{display:flex;align-items:center;justify-content:center;}
   .calc-divider{height:1px;background:#21262d;margin:6px 12px;}
 
@@ -221,7 +231,7 @@
   .attempt-link:hover{border-color:var(--gold)!important;}
 
   /* ===== AUTH SCREENS ===== */
-  .auth-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a 0%,#1e293b 60%,#0f172a 100%);padding:24px;}
+  .auth-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--dark);padding:24px;}
   .auth-card{background:var(--card);border-radius:20px;padding:28px 24px;width:100%;max-width:420px;border:1px solid #333;}
   .auth-logo{text-align:center;margin-bottom:20px;}
   .auth-logo span{font-size:3rem;}
@@ -264,7 +274,7 @@
   .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:500px;width:100%;margin-bottom:20px;}
   .mode-card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:18px 14px;text-align:center;cursor:pointer;transition:0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
   .mode-card:hover{border-color:var(--gold);transform:translateY(-2px);}
-  .mode-card.featured{border-color:var(--gold);background:rgba(37,99,235,0.05);}
+  .mode-card.featured{border-color:var(--gold);background:rgba(15,118,110,0.05);}
   .mode-card .mc-icon{font-size:2rem;margin-bottom:8px;}
   .mode-card .mc-name{font-size:0.85rem;font-weight:700;color:var(--white);margin-bottom:4px;}
   .mode-card .mc-desc{font-size:0.68rem;color:var(--muted);line-height:1.3;}
@@ -279,7 +289,7 @@
   .jamb-score-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
   .jamb-score-label{font-size:0.78rem;color:#aaa;}
   .jamb-score-val{font-size:1rem;font-weight:700;color:var(--gold);}
-  .jamb-total-card{background:linear-gradient(135deg,rgba(0,100,0,0.3),rgba(37,99,235,0.1));border:2px solid var(--gold);border-radius:14px;padding:18px;text-align:center;margin-bottom:14px;}
+  .jamb-total-card{background:linear-gradient(135deg,rgba(0,100,0,0.3),rgba(15,118,110,0.1));border:2px solid var(--gold);border-radius:14px;padding:18px;text-align:center;margin-bottom:14px;}
 
   /* ===== DIFFICULTY BADGES ===== */
   .diff-badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
@@ -314,7 +324,7 @@
   .comment-actions{display:flex;gap:12px;align-items:center;}
   .comment-btn{background:none;border:none;color:#888;font-size:0.72rem;cursor:pointer;padding:4px 0;}
   .comment-btn:hover{color:var(--gold);}
-  .reply-box{background:rgba(37,99,235,0.05);border:1px solid #333;border-radius:10px;padding:10px;margin-top:8px;}
+  .reply-box{background:rgba(15,118,110,0.05);border:1px solid #333;border-radius:10px;padding:10px;margin-top:8px;}
   .reply-card{background:rgba(0,0,0,0.2);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:8px 10px;margin-top:6px;}
 
   /* ===== AI ASSISTANT ===== */
@@ -336,15 +346,15 @@
   .rank-badge-inline{font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:700;}
   .rank-bronze{background:rgba(205,127,50,0.2);color:#cd7f32;border:1px solid #cd7f32;}
   .rank-silver{background:rgba(192,192,192,0.2);color:#c0c0c0;border:1px solid #c0c0c0;}
-  .rank-gold-r{background:rgba(37,99,235,0.2);color:#2563eb;border:1px solid #2563eb;}
+  .rank-gold-r{background:rgba(15,118,110,0.2);color:#0f766e;border:1px solid #0f766e;}
   .rank-platinum{background:rgba(229,228,226,0.2);color:#e5e4e2;border:1px solid #e5e4e2;}
   .rank-diamond{background:rgba(185,242,255,0.2);color:#b9f2ff;border:1px solid #b9f2ff;}
   .rank-master{background:rgba(255,100,100,0.2);color:#ff6464;border:1px solid #ff6464;}
   .rank-grandmaster{background:rgba(255,50,50,0.3);color:#ff3232;border:1px solid #ff3232;}
   .duel-btn{background:linear-gradient(135deg,#dc3545,#ff6b6b);color:#fff;border:none;border-radius:20px;padding:7px 18px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;}
   .lq-player-chip{background:var(--card);border:1px solid #333;border-radius:20px;padding:4px 10px;font-size:0.72rem;font-weight:700;display:flex;align-items:center;gap:5px;}
-  .lq-mini-player{background:rgba(37,99,235,0.1);border:1px solid #444;border-radius:8px;padding:4px 8px;font-size:0.65rem;text-align:center;flex-shrink:0;min-width:60px;}
-  .lq-mini-player.top{border-color:var(--gold);background:rgba(37,99,235,0.15);}
+  .lq-mini-player{background:rgba(15,118,110,0.1);border:1px solid #444;border-radius:8px;padding:4px 8px;font-size:0.65rem;text-align:center;flex-shrink:0;min-width:60px;}
+  .lq-mini-player.top{border-color:var(--gold);background:rgba(15,118,110,0.15);}
   .notif-item{background:var(--card);border:1px solid #2a2a3e;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
   .notif-item.unread{border-color:var(--gold);}
   .notif-icon{font-size:1.5rem;flex-shrink:0;}
@@ -361,7 +371,7 @@
   .lb-tab-btn.active{background:var(--gold);border-color:var(--gold);color:#000;}
   .lb-entry{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);}
   .lb-entry:last-child{border-bottom:none;}
-  .lb-entry.me{background:rgba(37,99,235,0.06);}
+  .lb-entry.me{background:rgba(15,118,110,0.06);}
   .lb-rank{font-size:1.3rem;min-width:34px;text-align:center;}
   .lb-info{flex:1;min-width:0;}
   .lb-name{font-weight:700;font-size:0.88rem;}
@@ -526,11 +536,17 @@
 </div>
 <div id="quiz">
   <div class="quiz-header">
-    <span class="subject-badge" id="quizSubject">MIXED</span>
-    <span class="q-counter" id="qCounter">Q 1 / 50</span>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button onclick="toggleCalc()" style="background:rgba(37,99,235,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:5px 10px;font-size:0.8rem;cursor:pointer;font-weight:700;" title="Scientific Calculator">🧮</button>
+    <div class="quiz-icons-row">
+      <button class="icon-circle-btn" id="flagBtn" onclick="toggleFlag()" title="Flag this question">🔖</button>
+      <button class="icon-circle-btn" onclick="toggleCalc()" title="Scientific Calculator">🧮</button>
+      <button class="icon-circle-btn" id="mapToggleBtn" onclick="toggleMap()" title="Question Map">▤</button>
+      <div class="spacer"></div>
       <div class="timer" id="timerDisplay">30:00</div>
+    </div>
+    <span class="subject-badge" id="quizSubject">MIXED</span>
+    <div class="quiz-progress-row">
+      <span class="q-counter" id="qCounter">Q 1 / 50</span>
+      <button class="quiz-next-chev" onclick="navigate(1)" title="Next question">›</button>
     </div>
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:2%"></div></div>
@@ -541,10 +557,6 @@
     <div id="explanationDiv" class="explanation" style="display:none;"></div>
     <div class="nav-row">
       <button class="nav-btn" id="prevBtn" onclick="navigate(-1)" disabled>◀ Prev</button>
-      <div style="display:flex;gap:8px;">
-        <button class="flag-btn" id="flagBtn" onclick="toggleFlag()">🚩 Flag</button>
-        <button class="map-btn" id="mapToggleBtn" onclick="toggleMap()">🗺 Map</button>
-      </div>
       <button class="nav-btn" id="nextBtn" onclick="navigate(1)">Next ▶</button>
     </div>
     <div style="text-align:center;margin-top:10px;">
@@ -735,7 +747,7 @@ Ans: B"></textarea>
   <button class="back-btn" style="align-self:flex-start;margin-bottom:16px;" onclick="showJAMBMode()">← Back</button>
   <h2 style="color:var(--gold);margin-bottom:4px;">Select Your Subjects</h2>
   <p style="color:#aaa;font-size:0.82rem;margin-bottom:6px;text-align:center;">English Language is compulsory. Choose <strong style="color:var(--gold);">3 more</strong> subjects.</p>
-  <div style="background:rgba(37,99,235,0.08);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;margin-bottom:16px;width:100%;max-width:500px;text-align:center;">
+  <div style="background:rgba(15,118,110,0.08);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;margin-bottom:16px;width:100%;max-width:500px;text-align:center;">
     <span style="color:var(--gold);font-size:0.8rem;font-weight:700;" id="jambSelCount">0 / 3 subjects selected</span>
   </div>
   <!-- Practice-only settings -->
@@ -755,11 +767,16 @@ Ans: B"></textarea>
 <!-- ===== JAMB QUIZ SCREEN (reuses quiz div with subject nav) ===== -->
 <div id="jambQuizScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);">
   <div class="quiz-header">
-    <span class="subject-badge" id="jambBadge">JAMB</span>
-    <span class="q-counter" id="jambCounter">Q 1/60</span>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button onclick="toggleCalc()" style="background:rgba(37,99,235,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:5px 10px;font-size:0.8rem;cursor:pointer;font-weight:700;">🧮</button>
+    <div class="quiz-icons-row">
+      <button class="icon-circle-btn" onclick="jambToggleFlag()" title="Flag this question">🔖</button>
+      <button class="icon-circle-btn" onclick="toggleCalc()" title="Scientific Calculator">🧮</button>
+      <div class="spacer"></div>
       <div class="timer" id="jambTimer">30:00</div>
+    </div>
+    <span class="subject-badge" id="jambBadge">JAMB</span>
+    <div class="quiz-progress-row">
+      <span class="q-counter" id="jambCounter">Q 1/60</span>
+      <button class="quiz-next-chev" onclick="jambNavigate(1)" title="Next question">›</button>
     </div>
   </div>
   <div class="progress-bar"><div class="progress-fill" id="jambProgress" style="width:2%"></div></div>
@@ -771,7 +788,6 @@ Ans: B"></textarea>
     <div id="jambExplanation" class="explanation" style="display:none;"></div>
     <div class="nav-row">
       <button class="nav-btn" id="jambPrev" onclick="jambNavigate(-1)" disabled>◀ Prev</button>
-      <button class="flag-btn" onclick="jambToggleFlag()">🚩 Flag</button>
       <button class="nav-btn" id="jambNext" onclick="jambNavigate(1)">Next ▶</button>
     </div>
     <div style="text-align:center;margin-top:10px;">
@@ -942,7 +958,7 @@ Ans: B"></textarea>
   <div class="qb-header" style="flex-shrink:0;">
     <button class="back-btn" onclick="showSplash()">← Back</button>
     <h2>⚔️ Duel Mode</h2>
-    <div id="myRankBadge" style="font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(37,99,235,0.15);border:1px solid var(--gold);color:var(--gold);">🥉 Bronze</div>
+    <div id="myRankBadge" style="font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(15,118,110,0.15);border:1px solid var(--gold);color:var(--gold);">🥉 Bronze</div>
   </div>
   <div style="display:flex;background:var(--card);border-bottom:1px solid #333;flex-shrink:0;">
     <div class="admin-tab active" id="duelTabOnline" onclick="setDuelTab('online')" style="flex:1;text-align:center;font-size:0.78rem;">🟢 Online</div>
@@ -999,7 +1015,7 @@ Ans: B"></textarea>
   </div>
   <div style="width:100%;max-width:500px;padding:16px;">
     <!-- Countdown -->
-    <div style="background:linear-gradient(135deg,rgba(0,100,0,0.3),rgba(37,99,235,0.1));border:2px solid var(--gold);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;">
+    <div style="background:linear-gradient(135deg,rgba(0,100,0,0.3),rgba(15,118,110,0.1));border:2px solid var(--gold);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;">
       <div style="font-size:0.75rem;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Next Quiz Starts In</div>
       <div id="lqCountdown" style="font-size:3rem;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums;">00:00:00</div>
       <div style="font-size:0.75rem;color:#888;margin-top:6px;">Daily quiz at 12:00 PM</div>
@@ -1008,7 +1024,7 @@ Ans: B"></textarea>
     <div style="background:var(--card);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid #333;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div style="color:var(--gold);font-size:0.8rem;font-weight:700;">👥 Participants</div>
-        <div id="lqParticipantCount" style="background:rgba(37,99,235,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:3px 12px;font-size:0.75rem;font-weight:700;">0 / 30</div>
+        <div id="lqParticipantCount" style="background:rgba(15,118,110,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:3px 12px;font-size:0.75rem;font-weight:700;">0 / 30</div>
       </div>
       <div id="lqParticipantList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
@@ -1071,7 +1087,7 @@ Ans: B"></textarea>
       <div class="auth-err" id="forgotErr1"></div>
     </div>
     <div id="forgotStep2" style="display:none;">
-      <div style="background:rgba(37,99,235,0.1);border:1px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="background:rgba(15,118,110,0.1);border:1px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:14px;">
         <div style="font-size:0.75rem;color:#aaa;margin-bottom:4px;">Security Question:</div>
         <div style="font-weight:700;color:var(--white);font-size:0.9rem;" id="forgotQuestion"></div>
       </div>
@@ -3059,7 +3075,7 @@ function renderQuestion(){
   q.opts.forEach((opt,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn';
-    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span>'+opt+'</span>';
+    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+opt+'</span>';
     
     // Highlight selected option (before submission — no reveal)
     if(selected===i){
@@ -3076,8 +3092,8 @@ function renderQuestion(){
   document.getElementById('nextBtn').style.display=currentIndex<total-1?'inline-block':'none';
   document.getElementById('submitQuizBtn').style.display=currentIndex===total-1?'inline-block':'none';
   const fb=document.getElementById('flagBtn');
-  fb.className=flagged.has(currentIndex)?'flag-btn flagged':'flag-btn';
-  fb.textContent=flagged.has(currentIndex)?'🚩 Flagged':'🚩 Flag';
+  fb.className=flagged.has(currentIndex)?'icon-circle-btn flagged':'icon-circle-btn';
+  fb.title=flagged.has(currentIndex)?'Flagged - tap to unflag':'Flag this question';
   updateMapDots();
 }
 
@@ -3166,7 +3182,7 @@ function _endQuizCoreBase(timeout,antiCheat){
 // ===== RESULTS =====
 function renderResults({correct,wrong,skipped,total,pct,acc,ts,bySub,timeout,antiCheat}){
   let icon='💪',label='Keep Practising!',color='#dc3545';
-  if(pct>=70){icon='🏆';label='Outstanding!';color='#2563eb';}
+  if(pct>=70){icon='🏆';label='Outstanding!';color='#0f766e';}
   else if(pct>=60){icon='👍';label='Good Performance!';color='#17a2b8';}
   else if(pct>=50){icon='📚';label='Average — Keep Studying!';color='#ffc107';}
   if(timeout)label='⏰ Time Up! '+label;
@@ -3188,15 +3204,15 @@ function renderResults({correct,wrong,skipped,total,pct,acc,ts,bySub,timeout,ant
   // Grade pills row
   const grRow=document.getElementById('resultGradeRow');
   grRow.innerHTML=
-    '<div style="background:rgba(37,99,235,0.12);border:1px solid var(--gold);border-radius:20px;padding:5px 16px;text-align:center;">'
+    '<div style="background:rgba(15,118,110,0.12);border:1px solid var(--gold);border-radius:20px;padding:5px 16px;text-align:center;">'
       +'<div style="font-size:1.1rem;font-weight:900;color:var(--gold)">'+score50+' <span style="font-size:0.65rem;font-weight:400;color:#aaa">/ 50</span></div>'
       +'<div style="font-size:0.62rem;color:#888">SCORE / 50</div>'
     +'</div>'
-    +'<div style="background:rgba(37,99,235,0.12);border:1px solid var(--gold);border-radius:20px;padding:5px 16px;text-align:center;">'
+    +'<div style="background:rgba(15,118,110,0.12);border:1px solid var(--gold);border-radius:20px;padding:5px 16px;text-align:center;">'
       +'<div style="font-size:1.1rem;font-weight:900;color:var(--gold)">'+score400+' <span style="font-size:0.65rem;font-weight:400;color:#aaa">/ 400</span></div>'
       +'<div style="font-size:0.62rem;color:#888">SCORE / 400</div>'
     +'</div>'
-    +'<div style="background:rgba(37,99,235,0.12);border:1px solid var(--gold);border-radius:20px;padding:5px 16px;text-align:center;">'
+    +'<div style="background:rgba(15,118,110,0.12);border:1px solid var(--gold);border-radius:20px;padding:5px 16px;text-align:center;">'
       +'<div style="font-size:1.1rem;font-weight:900;color:'+color+'">'+score100+'%</div>'
       +'<div style="font-size:0.62rem;color:#888">PERCENTAGE</div>'
     +'</div>';
@@ -3246,7 +3262,7 @@ function renderHistory(){
 
   // ── Summary stats ────────────────────────────────────────────────────────
   let html='<div style="background:var(--card);border-radius:12px;padding:14px 16px;margin-bottom:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;">'
-    +'<div><div style="font-size:1.3rem;font-weight:700;color:#2563eb">'+best+'%</div><div style="font-size:0.65rem;color:#888">Best</div></div>'
+    +'<div><div style="font-size:1.3rem;font-weight:700;color:#0f766e">'+best+'%</div><div style="font-size:0.65rem;color:#888">Best</div></div>'
     +'<div><div style="font-size:1.3rem;font-weight:700;color:var(--gold)">'+avg+'%</div><div style="font-size:0.65rem;color:#888">Average</div></div>'
     +'<div><div style="font-size:1.3rem;font-weight:700;color:#dc3545">'+worst+'%</div><div style="font-size:0.65rem;color:#888">Lowest</div></div>'
     +'<div><div style="font-size:1.3rem;font-weight:700;color:var(--gold)">'+h.length+'</div><div style="font-size:0.65rem;color:#888">Attempts</div></div>'
@@ -3287,7 +3303,7 @@ function renderHistory(){
 
     // Fill area under line (gradient effect)
     const fillPts=pts+' '+(PAD+(n-1)*xStep).toFixed(1)+','+H+' '+PAD+','+H;
-    svg+='<polygon points="'+fillPts+'" fill="rgba(37,99,235,0.07)"/>';
+    svg+='<polygon points="'+fillPts+'" fill="rgba(15,118,110,0.07)"/>';
 
     // Line
     svg+='<polyline points="'+pts+'" fill="none" stroke="'+trendColor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -3296,7 +3312,7 @@ function renderHistory(){
     chartData.forEach((x,i)=>{
       const cx=(PAD+i*xStep).toFixed(1);
       const cy=yScale(x.percent).toFixed(1);
-      const col=x.percent>=70?'#2563eb':x.percent>=50?'#ffc107':'#dc3545';
+      const col=x.percent>=70?'#0f766e':x.percent>=50?'#ffc107':'#dc3545';
       const dt=new Date(x.date).toLocaleDateString('en-NG',{day:'numeric',month:'short'});
       svg+='<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="'+col+'" stroke="#1a1a2e" stroke-width="1.5">'
           +'<title>#'+(i+1)+' — '+x.percent+'% ('+dt+')</title></circle>';
@@ -3319,7 +3335,7 @@ function renderHistory(){
   html+='<div class="perf-chart-wrap" style="margin-bottom:12px;">'
     +'<div class="perf-chart-title">🏅 Performance Ranking (Best → Lowest)</div>';
   sorted.forEach((x,ri)=>{
-    const col=x.percent>=70?'#2563eb':x.percent>=50?'#ffc107':'#dc3545';
+    const col=x.percent>=70?'#0f766e':x.percent>=50?'#ffc107':'#dc3545';
     const medal=ri===0?'🥇':ri===1?'🥈':ri===2?'🥉':'#'+(ri+1);
     const dt=new Date(x.date).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});
     const sm=subjectMeta[x.subject]||{icon:'🎯',name:x.subject||'Mixed'};
@@ -3338,7 +3354,7 @@ function renderHistory(){
   html+='<div style="font-size:0.75rem;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🕐 Recent Attempts (tap to review)</div>';
   h.forEach((x,i)=>{
     const dt=new Date(x.date).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    const col=x.percent>=70?'#2563eb':x.percent>=50?'#ffc107':'#dc3545';
+    const col=x.percent>=70?'#0f766e':x.percent>=50?'#ffc107':'#dc3545';
     const sm=subjectMeta[x.subject]||{icon:'🎯',name:x.subject||'Mixed'};
     const rank=rankOf[i];
     const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'#'+rank;
@@ -3868,7 +3884,7 @@ async function renderLeaderboard(tab){
     const max=entries[0]?.score||1;
     let html='<div style="background:var(--card);border-radius:14px;overflow:hidden;border:1px solid #2a2a3e;">';
     entries.forEach((e,i)=>{
-      const col=e.score>=70?'#2563eb':e.score>=50?'#ffc107':'#dc3545';
+      const col=e.score>=70?'#0f766e':e.score>=50?'#ffc107':'#dc3545';
       const medal=i<3?medals[i]:'<span style="color:#666;font-size:0.8rem;">#'+(i+1)+'</span>';
       const isMe=currentUser&&e.name===currentUser.name;
       html+='<div class="lb-entry'+(isMe?' me':'')+'">'
@@ -3887,7 +3903,7 @@ async function renderLeaderboard(tab){
       const me=entries.find(e=>e.name===currentUser.name);
       const myRank=entries.findIndex(e=>e.name===currentUser.name)+1;
       if(me){
-        html+='<div style="margin-top:10px;background:rgba(37,99,235,0.07);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">'
+        html+='<div style="margin-top:10px;background:rgba(15,118,110,0.07);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">'
           +'<span style="font-size:0.78rem;color:#aaa;">Your Rank</span>'
           +'<span style="font-weight:900;color:var(--gold);">#'+myRank+' of '+entries.length+'</span>'
           +'<span style="font-weight:900;color:var(--gold);">'+me.score+(scoreLabel||'%')+'</span>'
@@ -4047,9 +4063,9 @@ async function renderLeaderboard(tab){
           const sorted=grp.entries.sort((a,b)=>b.score-a.score).slice(0,3);
           const dateLabel=new Date(dk).toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
           html+='<div style="background:var(--card);border-radius:10px;margin-bottom:10px;border:1px solid #2a2a3e;overflow:hidden;">'
-            +'<div style="background:rgba(37,99,235,0.08);padding:8px 14px;font-size:0.75rem;font-weight:700;color:var(--gold);">📅 '+dateLabel+'</div>';
+            +'<div style="background:rgba(15,118,110,0.08);padding:8px 14px;font-size:0.75rem;font-weight:700;color:var(--gold);">📅 '+dateLabel+'</div>';
           sorted.forEach((e,i)=>{
-            const col=e.score>=70?'#2563eb':e.score>=50?'#ffc107':'#dc3545';
+            const col=e.score>=70?'#0f766e':e.score>=50?'#ffc107':'#dc3545';
             html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line);">'
               +'<span style="font-size:1rem;">'+(medals[i]||'#'+(i+1))+'</span>'
               +'<span style="flex:1;font-size:0.82rem;font-weight:700;">'+e.name+'</span>'
@@ -4069,9 +4085,9 @@ async function renderLeaderboard(tab){
           const sorted=grp.entries.sort((a,b)=>b.score-a.score).slice(0,3);
           const wkLabel=wk.includes('_W')?'Week '+wk.split('_W')[1]+' ('+wk.split('_W')[0]+')':wk;
           html+='<div style="background:var(--card);border-radius:10px;margin-bottom:10px;border:1px solid #2a2a3e;overflow:hidden;">'
-            +'<div style="background:rgba(37,99,235,0.08);padding:8px 14px;font-size:0.75rem;font-weight:700;color:var(--gold);">🗓 '+wkLabel+'</div>';
+            +'<div style="background:rgba(15,118,110,0.08);padding:8px 14px;font-size:0.75rem;font-weight:700;color:var(--gold);">🗓 '+wkLabel+'</div>';
           sorted.forEach((e,i)=>{
-            const col=e.score>=70?'#2563eb':e.score>=50?'#ffc107':'#dc3545';
+            const col=e.score>=70?'#0f766e':e.score>=50?'#ffc107':'#dc3545';
             html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line);">'
               +'<span style="font-size:1rem;">'+(medals[i]||'#'+(i+1))+'</span>'
               +'<span style="flex:1;font-size:0.82rem;font-weight:700;">'+e.name+'</span>'
@@ -4206,7 +4222,7 @@ function renderDailyChallenge(){
 
   if(done){
     // Already completed today
-    const col=done.pct>=70?'#2563eb':done.pct>=50?'#ffc107':'#dc3545';
+    const col=done.pct>=70?'#0f766e':done.pct>=50?'#ffc107':'#dc3545';
     const icon=done.pct>=70?'🏆':done.pct>=50?'👍':'💪';
     body.innerHTML='<div style="text-align:center;padding:30px 0;">'
       +'<div style="font-size:4rem;">'+icon+'</div>'
@@ -4215,7 +4231,7 @@ function renderDailyChallenge(){
       +'<div style="font-size:3rem;font-weight:900;color:'+col+';">'+done.pct+'%</div>'
       +'<div style="font-size:0.85rem;color:#aaa;margin:8px 0 4px;">'+done.correct+' / '+done.total+' correct</div>'
       +'<div style="font-size:0.75rem;color:#888;margin-bottom:24px;">Score/50: '+Math.round(done.correct/done.total*50*10)/10+' &nbsp;|&nbsp; Score/400: '+Math.round(done.correct/done.total*400*10)/10+'</div>'
-      +'<div style="background:rgba(37,99,235,0.08);border:1px solid var(--gold);border-radius:12px;padding:14px;margin-bottom:20px;">'
+      +'<div style="background:rgba(15,118,110,0.08);border:1px solid var(--gold);border-radius:12px;padding:14px;margin-bottom:20px;">'
         +'<div style="font-size:0.75rem;color:#aaa;margin-bottom:4px;">Come back tomorrow for a new challenge!</div>'
         +'<div style="font-size:0.7rem;color:#666;">Streak keeps you sharp. Consistency wins.</div>'
       +'</div>'
@@ -4249,12 +4265,12 @@ function renderDailyChallenge(){
     +'<div style="color:var(--gold);font-weight:700;font-size:1rem;margin:4px 0;">Daily Challenge</div>'
     +'<div style="font-size:0.8rem;color:#aaa;margin-bottom:4px;">'+today+'</div>'
     +'<div style="font-size:0.75rem;color:#666;margin-bottom:16px;">10 random questions — one shot — no replay until tomorrow</div>'
-    +'<div style="background:rgba(37,99,235,0.08);border:1px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">'
+    +'<div style="background:rgba(15,118,110,0.08);border:1px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">'
       +'<div><div style="font-size:1.1rem;font-weight:900;color:var(--gold);">10</div><div style="font-size:0.65rem;color:#888;">Questions</div></div>'
       +'<div><div style="font-size:1.1rem;font-weight:900;color:var(--gold);">Mixed</div><div style="font-size:0.65rem;color:#888;">Subjects</div></div>'
       +'<div><div style="font-size:1.1rem;font-weight:900;color:var(--gold);">1 Try</div><div style="font-size:0.65rem;color:#888;">Per Day</div></div>'
     +'</div>'
-    +'<button onclick="startDailyChallenge()" style="background:linear-gradient(135deg,var(--green),var(--gold));color:#fff;border:none;border-radius:25px;padding:14px 40px;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(37,99,235,0.3);">⚡ Begin Challenge</button>'
+    +'<button onclick="startDailyChallenge()" style="background:linear-gradient(135deg,var(--green),var(--gold));color:#fff;border:none;border-radius:25px;padding:14px 40px;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(15,118,110,0.3);">⚡ Begin Challenge</button>'
   +'</div>';
 
   // Store pending questions in memory for this session
@@ -4521,7 +4537,7 @@ function renderJAMBSubjectGrid(){
     const selected=jambSelectedSubjects.includes(k);
     const card=document.createElement('div');
     card.className='subj-card';
-    card.style.cssText='padding:12px;border-color:'+(selected?'var(--gold)':'#333')+';background:'+(selected?'rgba(37,99,235,0.08)':'var(--card)');
+    card.style.cssText='padding:12px;border-color:'+(selected?'var(--gold)':'#333')+';background:'+(selected?'rgba(15,118,110,0.08)':'var(--card)');
     card.innerHTML='<div style="font-size:1.5rem;">'+v.icon+'</div><div style="font-size:0.72rem;color:'+(selected?'var(--gold)':'#ccc')+';font-weight:700;margin-top:4px;">'+v.name+'</div>';
     card.onclick=()=>toggleJAMBSubject(k);
     grid.appendChild(card);
@@ -4649,7 +4665,7 @@ function renderJAMBQuestion(idx){
       else if(i===chosen) btn.classList.add('wrong');
       btn.disabled=true;
     }
-    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span>'+o+'</span>';
+    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+o+'</span>';
     if(chosen===undefined) btn.onclick=()=>selectJAMBAnswer(i);
     opts.appendChild(btn);
   });
@@ -4801,7 +4817,7 @@ async function finishJAMBExam(timedOut){
 function renderJAMBResults(results,aggregate,timedOut){
   const icon=aggregate>=240?'🏆':aggregate>=180?'👍':'💪';
   const label=aggregate>=240?'Outstanding!':aggregate>=180?'Good Performance!':'Keep Practising!';
-  const col=aggregate>=240?'#2563eb':aggregate>=180?'#17a2b8':'#dc3545';
+  const col=aggregate>=240?'#0f766e':aggregate>=180?'#17a2b8':'#dc3545';
 
   let html='<div style="text-align:center;padding:20px 0 10px;">'
     +'<div style="font-size:3rem;">'+icon+'</div>'
@@ -4836,7 +4852,7 @@ function renderJAMBResults(results,aggregate,timedOut){
   html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">';
   results.forEach(r=>{
     const s50=Math.round(r.correct/r.total*50*10)/10||0;
-    html+='<div style="background:rgba(37,99,235,0.06);border:1px solid #444;border-radius:10px;padding:10px;text-align:center;">'
+    html+='<div style="background:rgba(15,118,110,0.06);border:1px solid #444;border-radius:10px;padding:10px;text-align:center;">'
       +'<div style="font-size:0.65rem;color:#888;">'+(JAMB_SUBJECTS[r.subj]?.icon||'')+' '+r.label.split(' ')[0]+'</div>'
       +'<div style="font-size:0.95rem;font-weight:700;color:var(--gold);">'+r.pct+'%</div>'
       +'<div style="font-size:0.65rem;color:#aaa;">/50: '+s50+'</div>'
@@ -5053,7 +5069,7 @@ async function renderAdminTab(tab){
       if(!data||!data.length){body.innerHTML='<div style="padding:20px;color:#888;">No attempts recorded yet.</div>';return;}
       let html='<div style="color:var(--gold);font-size:0.75rem;font-weight:700;margin-bottom:12px;">📈 Recent Attempts</div>';
       data.forEach(a=>{
-        const col=a.percent>=70?'#2563eb':a.percent>=50?'#ffc107':'#dc3545';
+        const col=a.percent>=70?'#0f766e':a.percent>=50?'#ffc107':'#dc3545';
         const dt=new Date(a.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
         html+='<div class="user-row">'
           +'<div class="uname">'+a.user_name+' <span style="color:'+col+';font-weight:900;">'+a.percent+'%</span></div>'
@@ -5362,7 +5378,7 @@ async function loadDMUsers(){
           +'<div style="font-weight:700;font-size:0.88rem;">'+u.name+'</div>'
           +'<div style="font-size:0.7rem;color:#888;">'+u.email+'</div>'
         +'</div>'
-        +'<div style="background:rgba(37,99,235,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:4px 12px;font-size:0.72rem;font-weight:700;">Message</div>';
+        +'<div style="background:rgba(15,118,110,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:4px 12px;font-size:0.72rem;font-weight:700;">Message</div>';
       card.onclick=()=>openDM(u);
       list.appendChild(card);
     });
@@ -5459,7 +5475,7 @@ async function loadChatUsers(){
           +'<div style="font-size:0.68rem;color:#888;">'+u.email+'</div>'
           +'<div style="font-size:0.65rem;color:#666;margin-top:2px;">Joined '+dt+'</div>'
         +'</div>'
-        +(isMe?'':'<div style="background:rgba(37,99,235,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:4px 12px;font-size:0.72rem;font-weight:700;white-space:nowrap;">✉️ DM</div>');
+        +(isMe?'':'<div style="background:rgba(15,118,110,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:4px 12px;font-size:0.72rem;font-weight:700;white-space:nowrap;">✉️ DM</div>');
       if(!isMe) card.onclick=()=>{showChatTab('dm');openDM(u);};
       list.appendChild(card);
     });
@@ -5920,7 +5936,7 @@ function initAIChat(){
     What would you like to study today?</div>
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
-    ${['Explain photosynthesis','Solve: 2x²-8=0','JAMB Maths tips','What is osmosis?','Government: Federalism','English: figures of speech'].map(s=>`<button onclick="quickAsk('${s}')" style="background:rgba(37,99,235,0.1);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">${s}</button>`).join('')}
+    ${['Explain photosynthesis','Solve: 2x²-8=0','JAMB Maths tips','What is osmosis?','Government: Federalism','English: figures of speech'].map(s=>`<button onclick="quickAsk('${s}')" style="background:rgba(15,118,110,0.1);border:1px solid var(--gold);color:var(--gold);border-radius:20px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">${s}</button>`).join('')}
   </div>`;
   msgs.appendChild(welcome);
 }
@@ -6060,7 +6076,7 @@ async function renderAllQuestionsTab(){
       <div style="font-size:0.72rem;color:#888;margin-bottom:8px;">${[q.option_a,q.option_b,q.option_c,q.option_d].map((o,i)=>`<b style="color:${i===q.correct_answer?'var(--correct)':'#888'}">${lbls[i]}.</b> ${o}`).join(' &nbsp; ')}</div>
       ${q.explanation?`<div style="font-size:0.72rem;color:#aaa;font-style:italic;">💡 ${q.explanation}</div>`:''}
       <div style="display:flex;gap:8px;margin-top:8px;">
-        <button onclick="adminEditCloudQ('${q.id}')" style="background:rgba(37,99,235,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">✏️ Edit</button>
+        <button onclick="adminEditCloudQ('${q.id}')" style="background:rgba(15,118,110,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">✏️ Edit</button>
         <button onclick="adminDeleteCloudQ('${q.id}')" style="background:rgba(220,53,69,0.15);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">🗑 Delete</button>
       </div>
     </div>`;
@@ -6192,7 +6208,7 @@ async function renderAttemptsList(){
     if(!data||!data.length){body.innerHTML='<div style="padding:20px;color:#888;">No attempts recorded yet.</div>';return;}
     let html=`<div style="color:var(--gold);font-size:0.75rem;font-weight:700;margin-bottom:12px;">📈 ${data.length} Recent Attempts</div>`;
     data.forEach(a=>{
-      const col=a.percent>=70?'#2563eb':a.percent>=50?'#ffc107':'#dc3545';
+      const col=a.percent>=70?'#0f766e':a.percent>=50?'#ffc107':'#dc3545';
       const dt=new Date(a.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
       html+=`<div class="user-row" style="display:flex;align-items:center;gap:10px;">
         <div style="flex:1;">
@@ -6401,7 +6417,7 @@ async function loadDuelRankings(){
       const rank=getRank(s.xp||0);
       const isMe=s.user_id===currentUser?.id;
       const initials=name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-      html+='<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);'+(isMe?'background:rgba(37,99,235,0.06);':'')+'">'
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);'+(isMe?'background:rgba(15,118,110,0.06);':'')+'">'
         +'<div style="font-size:1.1rem;min-width:30px;text-align:center;">'+(medals[i]||('#'+(i+1)))+'</div>'
         +'<div style="width:34px;height:34px;border-radius:50%;background:'+rank.class+';display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;background:#333;">'+initials+'</div>'
         +'<div style="flex:1;">'
@@ -6721,7 +6737,7 @@ function renderDuelQuestion(idx){
   qOpts.forEach((o,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn';
-    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span>'+o+'</span>';
+    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+o+'</span>';
     if(duelState.answers[idx]!==undefined){
       if(i===q.ans) btn.classList.add('correct');
       else if(i===duelState.answers[idx]) btn.classList.add('wrong');
@@ -6951,7 +6967,7 @@ async function endDuel(timedOut){
   if(won) playSound('win');
   const icon=won?'🏆':draw?'🤝':'💔';
   const label=won?'You Won!':draw?"It's a Draw!":'You Lost!';
-  const col=won?'#2563eb':draw?'#ffc107':'#dc3545';
+  const col=won?'#0f766e':draw?'#ffc107':'#dc3545';
   document.getElementById('duelResultBody').innerHTML=
     '<div class="celebrate" style="text-align:center;padding:20px 0;">'
       +'<div style="font-size:5rem;margin-bottom:6px;">'+icon+'</div>'
@@ -7197,7 +7213,7 @@ function renderLiveQuizQuestion(idx){
   optArr.forEach((o,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn';
-    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span>'+o+'</span>';
+    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+o+'</span>';
     btn.onclick=async()=>{
       if(lqAnswered)return;
       lqAnswered=true;
@@ -7317,7 +7333,7 @@ async function endLiveQuiz(){
     +'<div style="background:var(--card);border-radius:12px;overflow:hidden;border:1px solid #333;">';
   (final||[]).forEach((p,i)=>{
     const isMe=p.user_id===currentUser.id;
-    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);'+(isMe?'background:rgba(37,99,235,0.06);':'')+'">'
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);'+(isMe?'background:rgba(15,118,110,0.06);':'')+'">'
       +'<div style="font-size:1rem;min-width:26px;text-align:center;">'+(podiumIcons[i]||('#'+(i+1)))+'</div>'
       +'<div style="flex:1;font-weight:700;font-size:0.85rem;color:'+(isMe?'var(--gold)':'var(--white)')+';">'+p.user_name+(isMe?' 👈':'')+' </div>'
       +'<div style="font-size:0.88rem;font-weight:700;color:var(--gold);">'+p.score+' pts</div>'
