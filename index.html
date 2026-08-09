@@ -591,7 +591,6 @@
   <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:2%"></div></div>
   <div class="quiz-body">
     <div class="q-number" id="qNumber">QUESTION 1</div>
-    <div id="qImage" style="display:none;text-align:center;margin:12px 0 18px;"></div>
     <div class="q-text" id="qText"></div>
     <div class="options" id="optionsDiv"></div>
     <div id="explanationDiv" class="explanation" style="display:none;"></div>
@@ -948,6 +947,7 @@ Ans: B"></textarea>
   <div class="jamb-subj-nav" id="jambSubjNav"></div>
   <div class="quiz-body">
     <div class="q-number" id="jambQNum">QUESTION 1</div>
+    <div id="jambQImage" style="display:none;text-align:center;margin:12px 0 18px;"></div>
     <div class="q-text" id="jambQText"></div>
     <div class="options" id="jambOptions"></div>
     <div id="jambExplanation" class="explanation" style="display:none;"></div>
@@ -3377,19 +3377,6 @@ function renderQuestion(){
   document.getElementById('quizSubject').textContent=sm.icon+' '+sm.name;
   document.getElementById('qCounter').textContent='Q '+(currentIndex+1)+' / '+total;
   document.getElementById('qNumber').textContent='QUESTION '+(currentIndex+1)+' OF '+total;
-
-  // Display the question diagram/image when one was uploaded.
-  const qImage=document.getElementById('qImage');
-  if(qImage){
-    if(q.image_url){
-      qImage.innerHTML='<img src="'+q.image_url+'" alt="Question diagram" style="max-width:100%;max-height:420px;width:auto;height:auto;display:block;margin:0 auto;border-radius:8px;">';
-      qImage.style.display='block';
-    }else{
-      qImage.innerHTML='';
-      qImage.style.display='none';
-    }
-  }
-
   document.getElementById('qText').innerHTML=q.q;
   document.getElementById('progressFill').style.width=((currentIndex+1)/total*100)+'%';
   
@@ -6094,6 +6081,19 @@ function renderJAMBQuestion(idx){
   // Difficulty badge
   const diff=q.difficulty||'moderate';
   const diffHtml='<span class="diff-badge '+diff+'">'+diff+'</span> ';
+
+  // Show the uploaded question diagram in the JAMB CBT.
+  const jambImg=document.getElementById('jambQImage');
+  if(jambImg){
+    if(q.image_url){
+      jambImg.innerHTML='<img src="'+q.image_url+'" alt="Question diagram" style="max-width:100%;max-height:420px;width:auto;height:auto;display:block;margin:0 auto;border-radius:8px;">';
+      jambImg.style.display='block';
+    }else{
+      jambImg.innerHTML='';
+      jambImg.style.display='none';
+    }
+  }
+
   document.getElementById('jambQText').innerHTML=diffHtml+q.q;
   document.getElementById('jambExplanation').style.display='none';
 
