@@ -1801,7 +1801,10 @@ function handleAppBackButton(){
 history.pushState({app:true},'',location.href);
 window.addEventListener('popstate',function(e){
   handleAppBackButton();
-  history.pushState({app:true},'',location.href); // re-trap for the next back press
+  // Deferring this to the next tick (rather than calling it synchronously
+  // inside the popstate handler) fixes a known mobile-browser quirk where
+  // the re-trap doesn't properly re-arm for the NEXT back press.
+  setTimeout(()=>{history.pushState({app:true},'',location.href);},0);
 });
 
 // ============================================================
@@ -5636,15 +5639,17 @@ async function loadJambQuestionBank(){
 
 // Filters a subject's JAMB pool by topic/year, falling back gracefully
 // if the filters would leave too few questions to build a session.
-function getJambPool(subject,topic,year){
+function getJambPool(subject,topics,years){
   let pool=JAMB_QB[subject]||[];
-  if(topic){
-    const filtered=pool.filter(q=>q.topic===topic);
-    if(filtered.length>=5) pool=filtered; // else fall back to full pool
+  const topicList=Array.isArray(topics)?topics.filter(Boolean):(topics?[topics]:[]);
+  const yearList=Array.isArray(years)?years.filter(Boolean):(years?[years]:[]);
+  if(topicList.length){
+    const filtered=pool.filter(q=>topicList.includes(q.topic));
+    if(filtered.length>0) pool=filtered; // respect the filter as long as ANYTHING matches
   }
-  if(year){
-    const filtered=pool.filter(q=>q.year===year);
-    if(filtered.length>=5) pool=filtered;
+  if(yearList.length){
+    const filtered=pool.filter(q=>yearList.includes(q.year));
+    if(filtered.length>0) pool=filtered;
   }
   return pool;
 }
@@ -5798,7 +5803,7 @@ let jambSubjBoundaries=[]; // [{subj, start, end, label}]
 let jambGlobalIndex=0;
 let jambEnded=false;
 
-let jambSubjectSettings={}; // { subj: {count, time, topic, year} }
+let jambSubjectSettings={}; // { subj: {count, time, topics:[], years:[]} }
 
 // ============================================================
 // JAMB WEEKLY CHALLENGE SCHEDULE
@@ -5873,7 +5878,7 @@ async function startJAMBFlow(type){
   document.getElementById('jambSubjectScreen').style.display='flex';
   document.getElementById('jambPracticeSettings').style.display=(type==='practice')?'block':'none';
   jambSelectedSubjects=[];
-  jambSubjectSettings={english:{count:20,time:20,topic:'',year:''}};
+  jambSubjectSettings={english:{count:20,time:20,topics:[],years:[]}};
   renderJAMBSubjectGrid();
   renderJambPerSubjSettings();
 }
@@ -5909,7 +5914,7 @@ function toggleJAMBSubject(k){
   }
   else if(jambSelectedSubjects.length<3){
     jambSelectedSubjects.push(k);
-    jambSubjectSettings[k]={count:20,time:20,topic:'',year:''};
+    jambSubjectSettings[k]={count:20,time:20,topics:[],years:[]};
   }
   else{alert('You can only select 3 subjects. Deselect one first.');return;}
   renderJAMBSubjectGrid();
@@ -5922,7 +5927,7 @@ function renderJambPerSubjSettings(){
   const subjKeys=['english',...jambSelectedSubjects];
   wrap.innerHTML=subjKeys.map(k=>{
     const meta=JAMB_SUBJECTS[k]||{icon:'📌',name:k};
-    const s=jambSubjectSettings[k]||{count:20,time:20,topic:'',year:''};
+    const s=jambSubjectSettings[k]||{count:20,time:20,topics:[],years:[]};
     const topics=getJambTopics(k);
     const years=getJambYears(k);
     return '<div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;">'
@@ -5932,15 +5937,21 @@ function renderJambPerSubjSettings(){
         +'<div><label class="af-label">Time (mins)</label><input type="number" min="5" class="af-input jamb-subj-time" data-subj="'+k+'" value="'+s.time+'" onchange="updateJambSetting(\''+k+'\',\'time\',this.value)"></div>'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
-        +'<div><label class="af-label">Topic</label><select class="af-input" onchange="updateJambSetting(\''+k+'\',\'topic\',this.value)"><option value="">All Topics</option>'+topics.map(t=>'<option value="'+t+'"'+(s.topic===t?' selected':'')+'>'+t+'</option>').join('')+'</select></div>'
-        +'<div><label class="af-label">Year</label><select class="af-input" onchange="updateJambSetting(\''+k+'\',\'year\',this.value)"><option value="">All Years</option>'+years.map(y=>'<option value="'+y+'"'+(String(s.year)===String(y)?' selected':'')+'>'+y+'</option>').join('')+'</select></div>'
+        +'<div><label class="af-label">Topics (leave blank = all, tap to multi-select)</label><select multiple size="4" class="af-input" style="height:auto;" onchange="updateJambSettingMulti(\''+k+'\',\'topics\',this)">'+topics.map(t=>'<option value="'+t+'"'+((s.topics||[]).includes(t)?' selected':'')+'>'+t+'</option>').join('')+'</select></div>'
+        +'<div><label class="af-label">Years (leave blank = all, tap to multi-select)</label><select multiple size="4" class="af-input" style="height:auto;" onchange="updateJambSettingMulti(\''+k+'\',\'years\',this)">'+years.map(y=>'<option value="'+y+'"'+((s.years||[]).map(String).includes(String(y))?' selected':'')+'>'+y+'</option>').join('')+'</select></div>'
       +'</div>'
     +'</div>';
   }).join('');
 }
 
+function updateJambSettingMulti(subj,field,selectEl){
+  if(!jambSubjectSettings[subj])jambSubjectSettings[subj]={count:20,time:20,topics:[],years:[]};
+  const values=Array.from(selectEl.selectedOptions).map(o=>field==='years'?parseInt(o.value):o.value);
+  jambSubjectSettings[subj][field]=values;
+}
+
 function updateJambSetting(subj,field,value){
-  if(!jambSubjectSettings[subj])jambSubjectSettings[subj]={count:20,time:20,topic:'',year:''};
+  if(!jambSubjectSettings[subj])jambSubjectSettings[subj]={count:20,time:20,topics:[],years:[]};
   if(field==='count') value=Math.max(5,parseInt(value)||5);
   if(field==='time') value=Math.max(5,parseInt(value)||5);
   jambSubjectSettings[subj][field]=value;
@@ -5968,8 +5979,8 @@ async function beginJAMBExam(){
   if(isFullExam){
     engSelected=await buildEnglishFullDistribution();
   }else{
-    const s=jambSubjectSettings['english']||{count:20,topic:'',year:''};
-    const pool=getJambPool('english',s.topic||null,s.year||null);
+    const s=jambSubjectSettings['english']||{count:20,topics:[],years:[]};
+    const pool=getJambPool('english',s.topics,s.years);
     const unseenPool=await getUnseenJambPool('english',pool,s.count);
     engSelected=pickWithDifficulty(unseenPool,s.count);
   }
@@ -5989,8 +6000,8 @@ async function beginJAMBExam(){
       const unseenPool=await getUnseenJambPool(subj,pool,40);
       selected=pickWithDifficulty(unseenPool,40);
     }else{
-      const s=jambSubjectSettings[subj]||{count:20,topic:'',year:''};
-      const pool=getJambPool(subj,s.topic||null,s.year||null);
+      const s=jambSubjectSettings[subj]||{count:20,topics:[],years:[]};
+      const pool=getJambPool(subj,s.topics,s.years);
       const unseenPool=await getUnseenJambPool(subj,pool,s.count);
       selected=pickWithDifficulty(unseenPool,s.count);
     }
@@ -6293,8 +6304,8 @@ async function startWeakAreaPractice(){
   if(keys.length<3){alert('Not enough questions saved yet across subjects to build a full session.');return;}
   jambSessionType='practice';
   jambSelectedSubjects=keys;
-  jambSubjectSettings={english:{count:15,time:15,topic:'',year:''}};
-  keys.forEach(k=>{jambSubjectSettings[k]={count:15,time:15,topic:'',year:''};});
+  jambSubjectSettings={english:{count:15,time:15,topics:[],years:[]}};
+  keys.forEach(k=>{jambSubjectSettings[k]={count:15,time:15,topics:[],years:[]};});
   beginJAMBExam();
 }
 
@@ -8094,18 +8105,26 @@ function waitForDuelResponse(requestId, opponentName){
 function subscribeToDuelRequests(){
   if(!currentUser)return;
   if(_duelRequestChannel){try{supa.removeChannel(_duelRequestChannel);}catch(e){}}
-  // Catch up on any request sent while the user was offline/away —
+  // Catch up on any RECENT request sent while the user was offline/away —
   // realtime only fires for NEW inserts, it wouldn't show these otherwise.
+  // Old pending requests (e.g. a month old) are treated as stale and expired
+  // instead of popping up out of nowhere.
+  const twoHoursAgo=new Date(Date.now()-2*60*60*1000).toISOString();
   supa.from('duel_requests').select('*').eq('to_user_id',currentUser.id).eq('status','pending')
+    .gte('created_at',twoHoursAgo)
     .order('created_at',{ascending:false}).limit(1)
     .then(({data})=>{
-      if(data&&data.length) showDuelRequestModal(data[0]);
+      // Never interrupt an active quiz/JAMB/duel session with a popup
+      if(data&&data.length&&!isQuizActive) showDuelRequestModal(data[0]);
     });
+  // Clean up: silently expire any duel request older than 2 hours that's
+  // still marked pending, so it can never resurface as stale later.
+  supa.from('duel_requests').update({status:'expired'}).eq('to_user_id',currentUser.id).eq('status','pending').lt('created_at',twoHoursAgo).then(()=>{});
   // Listen to ALL new duel requests, filter by recipient in JS
   _duelRequestChannel=supa.channel('duel_req_inbox_'+currentUser.id)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'duel_requests'},(payload)=>{
       if(payload.new&&payload.new.to_user_id===currentUser.id&&payload.new.status==='pending'){
-        showDuelRequestModal(payload.new);
+        if(!isQuizActive) showDuelRequestModal(payload.new); // don't interrupt an active session
         playSound('notification');
         // Also push to notifications list
         _notifData.unshift({
