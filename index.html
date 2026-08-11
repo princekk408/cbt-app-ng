@@ -801,6 +801,13 @@ Ans: B"></textarea>
   <button onclick="showSplash()" style="background:var(--gold);color:#fff;border:none;border-radius:20px;padding:12px 28px;font-weight:700;cursor:pointer;">🏠 Home</button>
 </div>
 
+<!-- ===== JAMB ANSWER REVIEW ===== -->
+<div id="jambReviewScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);padding:20px;">
+  <button class="back-btn" style="align-self:flex-start;margin-bottom:16px;" onclick="(window._jambReviewBackFn||showSplash)()">← Back</button>
+  <h2 style="color:var(--gold);margin-bottom:14px;">📝 Answer Review</h2>
+  <div id="jambReviewBody"></div>
+</div>
+
 <!-- ===== PAYMENT / UPGRADE SCREEN ===== -->
 <div id="paymentScreen" style="display:none;flex-direction:column;align-items:center;min-height:100vh;padding:30px 20px;background:var(--dark);">
   <button class="back-btn" style="align-self:flex-start;margin-bottom:16px;" onclick="showSplash()">← Back</button>
@@ -1760,7 +1767,7 @@ document.addEventListener('keydown', function(e){
 const ALL_SCREEN_IDS=['splash','subjectSelect','streamSelect','quiz','results','reviewScreen',
    'historyScreen','attemptDetailScreen','topicBankScreen','qbankScreen',
    'leaderboardScreen','dailyChallengeScreen','loginScreen','registerScreen',
-   'jambModeScreen','jambSubjectScreen','jambQuizScreen','jambResultsScreen','jambPerformanceScreen','jambWeeklyPendingScreen','paymentScreen',
+   'jambModeScreen','jambSubjectScreen','jambQuizScreen','jambResultsScreen','jambPerformanceScreen','jambWeeklyPendingScreen','jambReviewScreen','paymentScreen',
    'flashcardsHomeScreen','flashcardStudyScreen','studyNotesHomeScreen','studyNotesListScreen','studyNoteDetailScreen','studyPlanScreen',
    'generalUTMEScreen','generalPracticeScreen','adminScreen',
    'chatScreen','commentsScreen','forgotScreen',
@@ -4934,20 +4941,25 @@ function startReminderChecker(){
 
 function renderAdminJambBank(){
   const body=document.getElementById('adminBody');
-  body.innerHTML='<div style="display:flex;gap:8px;margin-bottom:14px;">'
-    +'<button id="jbSubTabBulk" onclick="setJambBankSubTab(\'bulk\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--gold);background:var(--gold);color:#fff;font-weight:700;cursor:pointer;font-size:0.82rem;">📋 Bulk Paste</button>'
-    +'<button id="jbSubTabSingle" onclick="setJambBankSubTab(\'single\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-weight:700;cursor:pointer;font-size:0.82rem;">➕ Single (+ Image)</button>'
+  body.innerHTML='<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
+    +'<button id="jbSubTabBulk" onclick="setJambBankSubTab(\'bulk\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--gold);background:var(--gold);color:#fff;font-weight:700;cursor:pointer;font-size:0.8rem;min-width:100px;">📋 Bulk Paste</button>'
+    +'<button id="jbSubTabSingle" onclick="setJambBankSubTab(\'single\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-weight:700;cursor:pointer;font-size:0.8rem;min-width:100px;">➕ Single (+ Image)</button>'
+    +'<button id="jbSubTabBrowse" onclick="setJambBankSubTab(\'browse\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-weight:700;cursor:pointer;font-size:0.8rem;min-width:100px;">🔍 Browse & Delete</button>'
     +'</div><div id="jbSubBody"></div>';
   setJambBankSubTab('bulk');
 }
 
 function setJambBankSubTab(tab){
   jambBankSubTab=tab;
-  document.getElementById('jbSubTabBulk').style.background=tab==='bulk'?'var(--gold)':'var(--card)';
-  document.getElementById('jbSubTabBulk').style.color=tab==='bulk'?'#fff':'var(--text)';
-  document.getElementById('jbSubTabSingle').style.background=tab==='single'?'var(--gold)':'var(--card)';
-  document.getElementById('jbSubTabSingle').style.color=tab==='single'?'#fff':'var(--text)';
-  if(tab==='bulk') renderJambBulkForm(); else renderJambSingleForm();
+  ['jbSubTabBulk','jbSubTabSingle','jbSubTabBrowse'].forEach(id=>{
+    const el=document.getElementById(id);
+    const isActive=(id==='jbSubTabBulk'&&tab==='bulk')||(id==='jbSubTabSingle'&&tab==='single')||(id==='jbSubTabBrowse'&&tab==='browse');
+    el.style.background=isActive?'var(--gold)':'var(--card)';
+    el.style.color=isActive?'#fff':'var(--text)';
+  });
+  if(tab==='bulk') renderJambBulkForm();
+  else if(tab==='browse') renderJambBrowseDelete();
+  else renderJambSingleForm();
 }
 
 function jambSubjectOptions(){
@@ -4957,13 +4969,105 @@ function englishTypeOptions(){
   return Object.entries(ENGLISH_QTYPES).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('');
 }
 
+// ============================================================
+// ADMIN: BROWSE & DELETE JAMB QUESTIONS (by subject, with duplicate detection)
+// ============================================================
+let jambBrowseCache=[]; // last-loaded set for the currently selected subject
+function renderJambBrowseDelete(){
+  const body=document.getElementById('jbSubBody');
+  body.innerHTML='<div class="admin-card">'
+    +'<div style="color:var(--gold);font-weight:700;margin-bottom:10px;">🔍 Browse & Delete JAMB Questions</div>'
+    +'<label class="af-label">Subject</label>'
+    +'<select class="af-input" id="jbrSubject" onchange="loadJambBrowseList()" style="margin-bottom:10px;"><option value="">-- Choose a subject --</option>'+jambSubjectOptions()+'</select>'
+    +'<div id="jbrToolbar" style="display:none;margin-bottom:10px;">'
+      +'<input id="jbrSearch" placeholder="🔍 Search question text..." oninput="filterJambBrowse(this.value)" style="width:100%;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text);border-radius:10px;padding:10px;font-size:0.85rem;font-family:inherit;outline:none;margin-bottom:8px;">'
+      +'<button onclick="findAndRemoveJambDuplicates()" style="background:rgba(220,38,38,0.1);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:8px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;">🧹 Find & Remove Duplicates</button>'
+    +'</div>'
+    +'<div id="jbrList"></div>'
+  +'</div>';
+}
+
+async function loadJambBrowseList(){
+  const subj=document.getElementById('jbrSubject').value;
+  const listDiv=document.getElementById('jbrList');
+  const toolbar=document.getElementById('jbrToolbar');
+  if(!subj){listDiv.innerHTML='';toolbar.style.display='none';return;}
+  toolbar.style.display='block';
+  listDiv.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;">Loading...</div>';
+  try{
+    const {data,error}=await supa.from('jamb_questions').select('*').eq('subject',subj).order('created_at',{ascending:false});
+    if(error){listDiv.innerHTML='<div style="color:var(--wrong);">Failed to load: '+error.message+'</div>';return;}
+    jambBrowseCache=data||[];
+    renderJambBrowseList(jambBrowseCache);
+  }catch(e){listDiv.innerHTML='<div style="color:var(--wrong);">Error loading questions.</div>';}
+}
+
+function renderJambBrowseList(list){
+  const listDiv=document.getElementById('jbrList');
+  const lbls=['A','B','C','D','E'];
+  if(!list.length){listDiv.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;">No questions found for this subject.</div>';return;}
+  listDiv.innerHTML='<div style="color:var(--muted);font-size:0.75rem;margin-bottom:10px;">'+list.length+' question(s)</div>'
+    +list.map(q=>{
+      return '<div class="admin-card" style="padding:12px;margin-bottom:8px;" data-search="'+(q.question_text||'').toLowerCase().replace(/"/g,'&quot;')+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px;">'
+          +'<span style="font-size:0.68rem;color:var(--muted);">'+(q.year?'📅 '+q.year+' ':'')+(q.topic?'🏷️ '+q.topic:'')+'</span>'
+          +'<span class="diff-badge '+(q.difficulty||'moderate')+'">'+(q.difficulty||'moderate')+'</span>'
+        +'</div>'
+        +'<div style="font-size:0.82rem;color:var(--text);margin-bottom:8px;">'+(q.question_text||'')+'</div>'
+        +'<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;">'+(q.options||[]).map((o,i)=>'<b style="color:'+(i===q.correct_index?'var(--correct)':'var(--muted)')+';">'+lbls[i]+'.</b> '+o).join(' &nbsp; ')+'</div>'
+        +'<button onclick="deleteJambQuestion(\''+q.id+'\')" style="background:rgba(220,38,38,0.1);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:5px 12px;font-size:0.72rem;cursor:pointer;">🗑️ Delete</button>'
+      +'</div>';
+    }).join('');
+}
+
+function filterJambBrowse(val){
+  const v=val.toLowerCase();
+  document.querySelectorAll('#jbrList .admin-card').forEach(card=>{
+    card.style.display=(!v||(card.dataset.search||'').includes(v))?'':'none';
+  });
+}
+
+async function deleteJambQuestion(id){
+  if(!confirm('Delete this question permanently? This cannot be undone.'))return;
+  try{
+    const {error}=await supa.from('jamb_questions').delete().eq('id',id);
+    if(error){alert('Delete failed: '+error.message);return;}
+    jambBrowseCache=jambBrowseCache.filter(q=>q.id!==id);
+    renderJambBrowseList(jambBrowseCache);
+    await loadJambQuestionBank(); // keep the in-memory JAMB bank in sync
+  }catch(e){alert('Connection error.');}
+}
+
+// Finds questions with identical (whitespace/case-normalized) question text
+// within the currently-loaded subject, and deletes every copy except the
+// first one found for each duplicate group.
+async function findAndRemoveJambDuplicates(){
+  if(!jambBrowseCache.length){alert('Load a subject first.');return;}
+  const seen={};
+  const toDelete=[];
+  jambBrowseCache.forEach(q=>{
+    const key=(q.question_text||'').trim().toLowerCase().replace(/\s+/g,' ');
+    if(seen[key]) toDelete.push(q.id);
+    else seen[key]=q.id;
+  });
+  if(!toDelete.length){alert('No duplicates found in this subject.');return;}
+  if(!confirm('Found '+toDelete.length+' duplicate question(s) in this subject. Delete them now? (Keeps one copy of each.)'))return;
+  try{
+    const {error}=await supa.from('jamb_questions').delete().in('id',toDelete);
+    if(error){alert('Failed: '+error.message);return;}
+    alert('✅ Removed '+toDelete.length+' duplicate(s).');
+    await loadJambBrowseList();
+    await loadJambQuestionBank();
+  }catch(e){alert('Connection error while deleting duplicates.');}
+}
+
 function renderJambBulkForm(){
   const body=document.getElementById('jbSubBody');
   body.innerHTML='<div class="admin-card">'
     +'<div style="color:var(--gold);font-weight:700;margin-bottom:6px;">📋 Bulk Add → JAMB Bank Only</div>'
     +'<div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">These questions are saved ONLY to the dedicated JAMB bank — separate from your general question bank — and are what the JAMB session draws from.</div>'
     +'<div style="background:var(--accent);border-radius:10px;padding:10px 12px;font-size:0.72rem;color:var(--text);line-height:1.6;margin-bottom:12px;">'
-      +'💡 <strong>Multi-subject paste:</strong> drop a <code>Subject: Physics</code>, <code>Difficulty: Easy</code>, <code>Year: 2019</code> or <code>Topic: Mechanics</code> line anywhere before a question and it applies to every question after it — until the next tag changes it. Paste several subjects and difficulty groups in one go; the dropdowns below are just the fallback for anything untagged.'
+      +'💡 <strong>Multi-subject paste:</strong> drop a <code>Subject: Physics</code>, <code>Difficulty: Easy</code>, <code>Year: 2019</code> or <code>Topic: Mechanics</code> line anywhere before a question and it applies to every question after it — until the next tag changes it. Paste several subjects and difficulty groups in one go; the dropdowns below are just the fallback for anything untagged.<br><br>💡 <strong>Comprehension/Cloze passages:</strong> add <code>Passage: My Title</code> on its own line, then the passage text on the following lines, then a line that just says <code>PassageEnd</code>. Every question after it shares that same passage automatically — until a new Passage tag appears.'
     +'</div>'
     +'<div class="af-row">'
       +'<div><label class="af-label">Default Subject (fallback)</label><select class="af-input" id="jbSubject">'+jambSubjectOptions()+'</select></div>'
@@ -5020,18 +5124,42 @@ function splitIntoQuestionBlocksWithMeta(text,defaults){
   });
   if(!questionStartLines.length)return [{block:text,meta:{...defaults}}];
 
-  // Scan every line for tag markers, building a running context snapshot
-  let ctx={...defaults};
+  // Scan every line for tag markers, building a running context snapshot.
+  // "Passage: <title>" starts capturing multi-line passage text until a
+  // "PassageEnd" line — that passage then attaches to every question after
+  // it (comprehension/cloze) until a new Passage tag appears.
+  let ctx={...defaults,passageTitle:null,passageText:null};
   const contextAtLine=[];
+  const passageLineIdx=new Set(); // lines that are part of tag/passage capture, stripped from question blocks
+  let capturingPassage=false;
+  let passageBuffer=[];
   lines.forEach((line,idx)=>{
+    if(capturingPassage){
+      passageLineIdx.add(idx);
+      if(/^\s*passageend\s*$/i.test(line)){
+        capturingPassage=false;
+        ctx={...ctx,passageText:passageBuffer.join('\n').trim()};
+        passageBuffer=[];
+      }else{
+        passageBuffer.push(line);
+      }
+      contextAtLine[idx]={...ctx};
+      return;
+    }
     const mSub=line.match(/^\s*subject\s*[:\-]\s*(.+?)\s*$/i);
     const mDiff=line.match(/^\s*difficulty\s*[:\-]\s*(.+?)\s*$/i);
     const mYear=line.match(/^\s*year\s*[:\-]\s*(\d{4})/i);
     const mTopic=line.match(/^\s*topic\s*[:\-]\s*(.+?)\s*$/i);
-    if(mSub){const k=matchJambSubjectKey(mSub[1]);if(k)ctx={...ctx,subject:k};}
-    if(mDiff){const d=normalizeDifficulty(mDiff[1]);if(d)ctx={...ctx,difficulty:d};}
-    if(mYear)ctx={...ctx,year:parseInt(mYear[1])};
-    if(mTopic)ctx={...ctx,topic:mTopic[1].trim()};
+    const mPassage=line.match(/^\s*passage\s*[:\-]\s*(.+?)\s*$/i);
+    if(mSub){const k=matchJambSubjectKey(mSub[1]);if(k)ctx={...ctx,subject:k};passageLineIdx.add(idx);}
+    if(mDiff){const d=normalizeDifficulty(mDiff[1]);if(d)ctx={...ctx,difficulty:d};passageLineIdx.add(idx);}
+    if(mYear){ctx={...ctx,year:parseInt(mYear[1])};passageLineIdx.add(idx);}
+    if(mTopic){ctx={...ctx,topic:mTopic[1].trim()};passageLineIdx.add(idx);}
+    if(mPassage){
+      ctx={...ctx,passageTitle:mPassage[1].trim(),passageText:null};
+      capturingPassage=true;
+      passageLineIdx.add(idx);
+    }
     contextAtLine[idx]={...ctx};
   });
 
@@ -5039,7 +5167,7 @@ function splitIntoQuestionBlocksWithMeta(text,defaults){
   for(let i=0;i<questionStartLines.length;i++){
     const start=questionStartLines[i];
     const end=questionStartLines[i+1]||lines.length;
-    const blockLines=lines.slice(start,end).filter(l=>!/^\s*(subject|difficulty|year|topic)\s*[:\-]/i.test(l));
+    const blockLines=lines.slice(start,end).filter((l,offset)=>!passageLineIdx.has(start+offset));
     const blockText=blockLines.join('\n').trim();
     if(blockText.length>3)blocks.push({block:blockText,meta:contextAtLine[start]||{...defaults}});
   }
@@ -5072,7 +5200,8 @@ async function jambBulkParse(){
 
   // Tally what was auto-detected per subject/difficulty, for a clear summary
   const tally={};
-  let saved=0,failed=0;
+  const passageIdCache={}; // title -> passage_id, so multiple questions sharing one Passage tag reuse the same row
+  let saved=0,failed=0,passagesCreated=0;
   for(const p of parsed){
     const subject=p._meta.subject||defaultSubject;
     const diff=p._meta.difficulty||defaultDiff;
@@ -5080,10 +5209,33 @@ async function jambBulkParse(){
     const year=p._meta.year||defaultYear;
     const tallyKey=subject+' / '+diff;
     tally[tallyKey]=(tally[tallyKey]||0)+1;
+
+    // Resolve passage_id if this question falls under an active Passage tag
+    let passageId=null;
+    if(p._meta.passageTitle&&p._meta.passageText){
+      const cacheKey=p._meta.passageTitle;
+      if(passageIdCache[cacheKey]){
+        passageId=passageIdCache[cacheKey];
+      }else{
+        try{
+          const {data:existing}=await supa.from('jamb_passages').select('id').eq('title',cacheKey).limit(1);
+          if(existing&&existing.length){
+            passageId=existing[0].id;
+          }else{
+            const passageType=(qtype==='cloze')?'cloze':'comprehension';
+            const {data:newPassage,error:passErr}=await supa.from('jamb_passages').insert([{subject,type:passageType,title:cacheKey,passage_text:p._meta.passageText}]).select().single();
+            if(!passErr&&newPassage){passageId=newPassage.id;passagesCreated++;}
+          }
+          passageIdCache[cacheKey]=passageId;
+        }catch(e){console.log('Passage resolve error',e);}
+      }
+    }
+
     try{
       const {error}=await supa.from('jamb_questions').insert([{
         subject:subject,
         question_type:qtype,
+        passage_id:passageId,
         topic:topic,
         year:year,
         difficulty:diff,
@@ -5099,7 +5251,7 @@ async function jambBulkParse(){
   }
   const tallyHtml=Object.entries(tally).map(([k,n])=>'<div>• '+k+': '+n+'</div>').join('');
   resultDiv.innerHTML='<div style="background:rgba(15,118,110,0.1);border:1px solid var(--correct);border-radius:10px;padding:12px;">'
-    +'<div style="color:var(--correct);font-weight:700;">✅ '+saved+' question(s) saved to JAMB bank!'+(failed?' ('+failed+' failed)':'')+'</div>'
+    +'<div style="color:var(--correct);font-weight:700;">✅ '+saved+' question(s) saved to JAMB bank!'+(failed?' ('+failed+' failed)':'')+(passagesCreated?' · '+passagesCreated+' new passage(s) created':'')+'</div>'
     +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+tallyHtml+'</div>'
     +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">These will now appear in JAMB Practice, Mock, and Weekly Challenge sessions only.</div>'
   +'</div>';
@@ -6204,6 +6356,14 @@ async function finishJAMBExam(timedOut,antiCheat){
   const totalPct=results.reduce((s,r)=>s+r.score100,0);
   const aggregate=Math.round(totalPct); // sum of 4 scores out of 400
 
+  // Full per-question breakdown — lets the student review exactly what they
+  // got right/wrong, with explanations, either right away (Practice) or
+  // later from history (Mock/Weekly, where the score-only rule applies).
+  const questionBreakdown=jambAllQuestions.map((q,i)=>({
+    q:q.q,opts:q.opts,ans:q.ans,explanation:q.explanation||'',
+    subject:q.subject,subjLabel:q.subjLabel,userAns:jambAnswers[i]
+  }));
+
   // Save to cloud
   if(currentUser){
     try{
@@ -6223,7 +6383,8 @@ async function finishJAMBExam(timedOut,antiCheat){
         total_score:totalPct,
         aggregate_400:aggregate,
         session_type:jambSessionType,
-        flagged_cheating:!!antiCheat
+        flagged_cheating:!!antiCheat,
+        question_breakdown:questionBreakdown
       }]);
     }catch(e){console.log('JAMB cloud save error',e);}
 
@@ -6398,6 +6559,7 @@ async function showJambPerformance(){
     html+='<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
       +'<div><div style="font-size:0.82rem;font-weight:700;color:var(--text);">'+typeLabel+'</div><div style="font-size:0.7rem;color:var(--muted);">'+date+'</div></div>'
       +'<div style="font-size:1.1rem;font-weight:700;color:var(--gold);">'+(a.aggregate_400||0)+'<span style="font-size:0.65rem;color:var(--muted);">/400</span></div>'
+      +'<button onclick="showJambReviewFromHistory(\''+a.id+'\')" style="background:var(--accent);border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:6px 10px;font-size:0.68rem;font-weight:700;cursor:pointer;margin-left:8px;white-space:nowrap;">📝 Review</button>'
     +'</div>';
   });
 
@@ -6450,12 +6612,63 @@ function renderJAMBResults(results,aggregate,timedOut){
   });
   html+='</div>';
 
-  html+='<div style="display:flex;gap:10px;justify-content:center;">'
-    +'<button onclick="showSplash()" style="background:var(--gold);color:#000;border:none;border-radius:20px;padding:12px 28px;font-weight:700;cursor:pointer;">🏠 Home</button>'
-    +'<button onclick="showLeaderboard()" style="background:transparent;border:2px solid var(--gold);color:var(--gold);border-radius:20px;padding:12px 28px;font-weight:700;cursor:pointer;">🏆 Leaderboard</button>'
-    +'</div>';
+  html+='<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">'
+    +(jambSessionType==='practice'?'<button onclick="showJambReview()" style="background:var(--accent);border:2px solid var(--gold);color:var(--gold);border-radius:20px;padding:12px 24px;font-weight:700;cursor:pointer;">\ud83d\udcdd Review My Answers</button>':'')
+    +'<button onclick="showSplash()" style="background:var(--gold);color:#000;border:none;border-radius:20px;padding:12px 28px;font-weight:700;cursor:pointer;">\ud83c\udfe0 Home</button>'
+    +'<button onclick="showLeaderboard()" style="background:transparent;border:2px solid var(--gold);color:var(--gold);border-radius:20px;padding:12px 28px;font-weight:700;cursor:pointer;">\ud83c\udfc6 Leaderboard</button>'
+    +'</div>'
+    +(jambSessionType!=='practice'?'<div style="text-align:center;font-size:0.72rem;color:var(--muted);margin-top:10px;">Answer review for '+(jambSessionType==='weekly'?'Weekly Challenge':'Mock Exam')+' isn&#39;t shown immediately — you can review your full answers anytime later from JAMB Performance → Session History.</div>':'');
 
   document.getElementById('jambResultsBody').innerHTML=html;
+}
+
+// Immediate review right after a Practice session — uses the in-memory
+// questions/answers from the session that just finished.
+function showJambReview(){
+  hideAll();
+  document.getElementById('jambReviewScreen').style.display='flex';
+  setThemeToggleVisible(true);
+  const breakdown=jambAllQuestions.map((q,i)=>({...q,userAns:jambAnswers[i]}));
+  renderJambReviewList(breakdown,()=>showSplash());
+}
+
+// Review from history (Mock/Weekly, or revisiting an old Practice session)
+// — pulls the saved breakdown from a jamb_attempts row instead of memory.
+async function showJambReviewFromHistory(attemptId){
+  hideAll();
+  document.getElementById('jambReviewScreen').style.display='flex';
+  setThemeToggleVisible(true);
+  document.getElementById('jambReviewBody').innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">Loading your answers...</div>';
+  try{
+    const {data,error}=await supa.from('jamb_attempts').select('question_breakdown').eq('id',attemptId).single();
+    if(error||!data||!data.question_breakdown||!data.question_breakdown.length){
+      document.getElementById('jambReviewBody').innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">No saved answer detail found for this session (it may predate this feature).</div>';
+      return;
+    }
+    renderJambReviewList(data.question_breakdown,()=>showJambPerformance());
+  }catch(e){
+    document.getElementById('jambReviewBody').innerHTML='<div style="color:var(--wrong);text-align:center;padding:30px;">Could not load review.</div>';
+  }
+}
+
+function renderJambReviewList(breakdown,backFn){
+  const lbls=['A','B','C','D','E'];
+  let html='';
+  breakdown.forEach((q,i)=>{
+    const skip=q.userAns===undefined||q.userAns===null;
+    const correct=!skip&&q.userAns===q.ans;
+    const cls=skip?'ri-skipped':correct?'ri-correct':'ri-wrong';
+    const badge=skip?'<span class="ri-badge skipped">Skipped</span>':correct?'<span class="ri-badge correct">✓ Correct</span>':'<span class="ri-badge wrong">✗ Wrong</span>';
+    const meta=JAMB_SUBJECTS[q.subject]||{icon:'📚',name:q.subjLabel||q.subject};
+    let ah='';
+    if(!skip)ah+='<div class="ri-ans you">Your answer: '+lbls[q.userAns]+'. '+q.opts[q.userAns]+'</div>';
+    else ah+='<div class="ri-ans you">No answer selected</div>';
+    ah+='<div class="ri-ans correct-ans">✓ Correct: '+lbls[q.ans]+'. '+q.opts[q.ans]+'</div>';
+    if(q.explanation)ah+='<div style="margin-top:6px;font-size:0.78rem;color:var(--muted);">💡 '+q.explanation+'</div>';
+    html+='<div class="review-item '+cls+'"><div class="ri-header"><span>'+meta.icon+' '+(q.subjLabel||meta.name)+' — Q'+(i+1)+'</span>'+badge+'</div><div class="ri-q">'+q.q+'</div>'+ah+'</div>';
+  });
+  document.getElementById('jambReviewBody').innerHTML=html;
+  window._jambReviewBackFn=backFn;
 }
 
 // ============================================================
@@ -7669,6 +7882,7 @@ function getBuiltInAIResponse(question){
 // ============================================================
 // ADMIN — ALL QUESTIONS (built-in + cloud) with edit/delete
 // ============================================================
+let adminAllQCache=[];
 async function renderAllQuestionsTab(){
   const body=document.getElementById('adminBody');
   body.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);">Loading all questions...</div>';
@@ -7687,6 +7901,7 @@ async function renderAllQuestionsTab(){
     const {data}=await supa.from('questions').select('*').order('created_at',{ascending:false});
     cloudQs=data||[];
   }catch(e){}
+  adminAllQCache=cloudQs;
 
   const total=builtIn.length+cloudQs.length;
   const lbls=['A','B','C','D','E'];
@@ -7695,7 +7910,8 @@ async function renderAllQuestionsTab(){
     <div style="color:var(--gold);font-size:0.8rem;font-weight:700;">📚 ${total} Total Questions</div>
     <div style="font-size:0.7rem;color:var(--muted);">☁️ ${cloudQs.length} cloud &nbsp;|&nbsp; 💾 ${builtIn.length} built-in</div>
   </div>
-  <input id="adminQSearch" placeholder="🔍 Search questions..." oninput="filterAdminQ(this.value)" style="width:100%;background:var(--input-bg);border:1px solid #444;color:var(--text);border-radius:10px;padding:10px;font-size:0.85rem;font-family:inherit;outline:none;margin-bottom:12px;">
+  <input id="adminQSearch" placeholder="🔍 Search questions..." oninput="filterAdminQ(this.value)" style="width:100%;background:var(--input-bg);border:1px solid #444;color:var(--text);border-radius:10px;padding:10px;font-size:0.85rem;font-family:inherit;outline:none;margin-bottom:10px;">
+  <button onclick="findAndRemoveGeneralDuplicates()" style="background:rgba(220,38,38,0.1);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:8px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;margin-bottom:12px;">🧹 Find & Remove Duplicates (cloud questions)</button>
   <div id="adminQList">`;
 
   // Cloud questions first (editable/deletable)
@@ -7731,6 +7947,27 @@ async function renderAllQuestionsTab(){
 
   html+='</div>';
   body.innerHTML=html;
+}
+
+// Finds cloud questions with identical (normalized) text WITHIN the same
+// subject, and deletes every copy except the first found per duplicate group.
+async function findAndRemoveGeneralDuplicates(){
+  if(!adminAllQCache.length){alert('No cloud questions loaded yet.');return;}
+  const seen={};
+  const toDelete=[];
+  adminAllQCache.forEach(q=>{
+    const key=(q.subject||'')+'::'+(q.question||'').trim().toLowerCase().replace(/\s+/g,' ');
+    if(seen[key]) toDelete.push(q.id);
+    else seen[key]=q.id;
+  });
+  if(!toDelete.length){alert('No duplicates found.');return;}
+  if(!confirm('Found '+toDelete.length+' duplicate question(s) across your subjects. Delete them now? (Keeps one copy of each.)'))return;
+  try{
+    const {error}=await supa.from('questions').delete().in('id',toDelete);
+    if(error){alert('Failed: '+error.message);return;}
+    alert('✅ Removed '+toDelete.length+' duplicate(s).');
+    renderAllQuestionsTab();
+  }catch(e){alert('Connection error while deleting duplicates.');}
 }
 
 function filterAdminQ(val){
@@ -7838,8 +8075,31 @@ function setAdminTab(tab){
 }
 
 // Update attempts tab to include delete buttons
+let adminAttemptsSubTab='general';
+function setAdminAttemptsSubTab(tab){
+  adminAttemptsSubTab=tab;
+  const g=document.getElementById('aaTabGeneral'),j=document.getElementById('aaTabJamb');
+  if(g&&j){
+    g.style.background=tab==='general'?'var(--gold)':'var(--card)';
+    g.style.color=tab==='general'?'#fff':'var(--text)';
+    j.style.background=tab==='jamb'?'var(--gold)':'var(--card)';
+    j.style.color=tab==='jamb'?'#fff':'var(--text)';
+  }
+  if(tab==='jamb') renderJambAttemptsList(); else renderGeneralAttemptsList();
+}
+
 async function renderAttemptsList(){
   const body=document.getElementById('adminBody');
+  body.innerHTML='<div style="display:flex;gap:8px;margin-bottom:14px;">'
+    +'<button id="aaTabGeneral" onclick="setAdminAttemptsSubTab(\'general\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--gold);background:var(--gold);color:#fff;font-weight:700;cursor:pointer;font-size:0.8rem;">📚 General/RSU/UTME</button>'
+    +'<button id="aaTabJamb" onclick="setAdminAttemptsSubTab(\'jamb\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-weight:700;cursor:pointer;font-size:0.8rem;">🎯 JAMB</button>'
+    +'</div><div id="aaBody"></div>';
+  renderGeneralAttemptsList();
+}
+
+async function renderGeneralAttemptsList(){
+  const body=document.getElementById('aaBody');
+  body.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;">Loading...</div>';
   try{
     const {data}=await supa.from('attempts').select('*').order('created_at',{ascending:false}).limit(100);
     if(!data||!data.length){body.innerHTML='<div style="padding:20px;color:var(--muted);">No attempts recorded yet.</div>';return;}
@@ -7858,6 +8118,45 @@ async function renderAttemptsList(){
     body.innerHTML=html;
   }catch(e){body.innerHTML='<div style="color:var(--wrong);padding:20px;">Error loading attempts.</div>';}
 }
+
+async function renderJambAttemptsList(){
+  const body=document.getElementById('aaBody');
+  body.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;">Loading...</div>';
+  try{
+    const {data}=await supa.from('jamb_attempts').select('*').order('created_at',{ascending:false}).limit(100);
+    if(!data||!data.length){body.innerHTML='<div style="padding:20px;color:var(--muted);">No JAMB attempts recorded yet.</div>';return;}
+    let html=`<div style="color:var(--gold);font-size:0.75rem;font-weight:700;margin-bottom:12px;">🎯 ${data.length} Recent JAMB Attempts</div>`;
+    data.forEach(a=>{
+      const dt=new Date(a.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      const typeLabel=a.session_type==='mock'?'Mock':a.session_type==='weekly'?'Weekly':'Practice';
+      const flagBadge=a.flagged_cheating?' <span style="color:var(--wrong);font-size:0.68rem;">🚩 flagged</span>':'';
+      html+=`<div class="admin-card" style="padding:12px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div class="uname">${a.user_name}${flagBadge}</div>
+          <div style="font-weight:900;color:var(--gold);">${a.aggregate_400||0}<span style="font-size:0.6rem;color:var(--muted);">/400</span></div>
+        </div>
+        <div class="umeta" style="margin-bottom:8px;">${typeLabel} · ${dt}</div>
+        <div style="font-size:0.72rem;color:var(--muted);display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px;">
+          <div>${a.english_label||'English'}: <b style="color:var(--text);">${a.english_score||0}%</b></div>
+          <div>${a.subject2_label||''}: <b style="color:var(--text);">${a.subject2_score||0}%</b></div>
+          <div>${a.subject3_label||''}: <b style="color:var(--text);">${a.subject3_score||0}%</b></div>
+          <div>${a.subject4_label||''}: <b style="color:var(--text);">${a.subject4_score||0}%</b></div>
+        </div>
+        <button onclick="adminDeleteJambAttempt('${a.id}')" style="background:rgba(220,53,69,0.15);border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:5px 10px;font-size:0.7rem;cursor:pointer;">🗑 Delete</button>
+      </div>`;
+    });
+    body.innerHTML=html;
+  }catch(e){body.innerHTML='<div style="color:var(--wrong);padding:20px;">Error loading JAMB attempts.</div>';}
+}
+
+async function adminDeleteJambAttempt(id){
+  if(!confirm('Delete this JAMB attempt record?'))return;
+  try{
+    await supa.from('jamb_attempts').delete().eq('id',id);
+    renderJambAttemptsList();
+  }catch(e){alert('Delete failed.');}
+}
+
 
 
 // ============================================================
