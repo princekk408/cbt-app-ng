@@ -3301,9 +3301,16 @@ function showAdmin(){
   hideAll();document.getElementById('adminScreen').style.display='flex';setAdminTab('overview');setThemeToggleVisible(true);
 }
 
-function loadSplashStats(){
+async function loadSplashStats(){
   const h=getHistory();
-  document.getElementById('splashAttempts').textContent=h.length;
+  let jambCount=0;
+  if(currentUser){
+    try{
+      const {count}=await supa.from('jamb_attempts').select('id',{count:'exact',head:true}).eq('user_id',currentUser.id);
+      jambCount=count||0;
+    }catch(e){}
+  }
+  document.getElementById('splashAttempts').textContent=h.length+jambCount;
   if(h.length>0){const best=Math.max(...h.map(x=>x.percent));document.getElementById('splashBest').textContent=best+'%';}
   const total=Object.values(QB).reduce((s,a)=>s+a.length,0);
   document.getElementById('splashTotal').textContent=total+'+';
@@ -3380,6 +3387,18 @@ function startMixed(){
   beginQuiz();
 }
 // ===== RENDER QUESTION — NO AUTO REVEAL =====
+// Converts plain-text math shorthand (typed by admins to avoid broken
+// unicode symbols) into properly rendered superscript/subscript for
+// students — e.g. "cm^3" -> "cm³" (rendered), "H_2O" -> "H₂O" (rendered).
+// Applied wherever question/option text is displayed.
+function formatMathText(str){
+  if(!str)return str;
+  let out=String(str);
+  out=out.replace(/\^(-?[A-Za-z0-9]+)/g,'<sup>$1</sup>');
+  out=out.replace(/_(-?[A-Za-z0-9]+)/g,'<sub>$1</sub>');
+  return out;
+}
+
 function renderQuestion(){
   const q=currentSession[currentIndex];
   const total=currentSession.length;
@@ -3387,7 +3406,7 @@ function renderQuestion(){
   document.getElementById('quizSubject').textContent=sm.icon+' '+sm.name;
   document.getElementById('qCounter').textContent='Q '+(currentIndex+1)+' / '+total;
   document.getElementById('qNumber').textContent='QUESTION '+(currentIndex+1)+' OF '+total;
-  document.getElementById('qText').innerHTML=q.q;
+  document.getElementById('qText').innerHTML=formatMathText(q.q);
   document.getElementById('progressFill').style.width=((currentIndex+1)/total*100)+'%';
   
   const od=document.getElementById('optionsDiv');od.innerHTML='';
@@ -3397,7 +3416,7 @@ function renderQuestion(){
   q.opts.forEach((opt,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn';
-    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+opt+'</span>';
+    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+formatMathText(opt)+'</span>';
     
     // Highlight selected option (before submission — no reveal)
     if(selected===i){
@@ -3565,11 +3584,11 @@ function renderReview(){
     const badge=skip?'<span class="ri-badge skipped">Skipped</span>':correct?'<span class="ri-badge correct">✓ Correct</span>':'<span class="ri-badge wrong">✗ Wrong</span>';
     const m=subjectMeta[q._subj||q.subject]||{icon:'📚',name:'Mixed'};
     let ah='';
-    if(!skip)ah+='<div class="ri-ans you">Your answer: '+lbls[ans]+'. '+q.opts[ans]+'</div>';
+    if(!skip)ah+='<div class="ri-ans you">Your answer: '+lbls[ans]+'. '+formatMathText(q.opts[ans])+'</div>';
     else ah+='<div class="ri-ans you">No answer selected</div>';
-    ah+='<div class="ri-ans correct-ans">✓ Correct: '+lbls[q.ans]+'. '+q.opts[q.ans]+'</div>';
-    if(q.explanation)ah+='<div style="margin-top:6px;font-size:0.78rem;color:var(--muted);">💡 '+q.explanation+'</div>';
-    b.innerHTML+='<div class="review-item '+cls+'"><div class="ri-header"><span>'+m.icon+' '+m.name+' — Q'+(i+1)+'</span>'+badge+'</div><div class="ri-q">'+q.q+'</div>'+ah+'</div>';
+    ah+='<div class="ri-ans correct-ans">✓ Correct: '+lbls[q.ans]+'. '+formatMathText(q.opts[q.ans])+'</div>';
+    if(q.explanation)ah+='<div style="margin-top:6px;font-size:0.78rem;color:var(--muted);">💡 '+formatMathText(q.explanation)+'</div>';
+    b.innerHTML+='<div class="review-item '+cls+'"><div class="ri-header"><span>'+m.icon+' '+m.name+' — Q'+(i+1)+'</span>'+badge+'</div><div class="ri-q">'+formatMathText(q.q)+'</div>'+ah+'</div>';
   });
 }
 
@@ -4741,8 +4760,8 @@ function startFlashDeck(subject){
 function renderFlashcard(){
   const card=currentFlashDeck[currentFlashIndex];
   document.getElementById('flashCounter').textContent='Card '+(currentFlashIndex+1)+' / '+currentFlashDeck.length;
-  document.getElementById('flashFront').textContent=card.front;
-  document.getElementById('flashBack').textContent=card.back;
+  document.getElementById('flashFront').innerHTML=formatMathText(card.front);
+  document.getElementById('flashBack').innerHTML=formatMathText(card.back);
   document.getElementById('flashFrontSide').style.display=currentFlashFlipped?'none':'flex';
   document.getElementById('flashBackSide').style.display=currentFlashFlipped?'flex':'none';
   document.getElementById('flashPrevBtn').disabled=currentFlashIndex===0;
@@ -4816,7 +4835,7 @@ function showStudyNoteDetail(subject,idx){
   document.getElementById('studyNoteDetailScreen').style.display='flex';
   setThemeToggleVisible(false);
   document.getElementById('noteDetailTitle').textContent=note.title;
-  document.getElementById('noteDetailContent').textContent=note.content;
+  document.getElementById('noteDetailContent').innerHTML=formatMathText(note.content);
 }
 
 // ============================================================
@@ -6082,6 +6101,8 @@ function renderJambPerSubjSettings(){
     const s=jambSubjectSettings[k]||{count:20,time:20,topics:[],years:[]};
     const topics=getJambTopics(k);
     const years=getJambYears(k);
+    const topicSummary=(s.topics&&s.topics.length)?s.topics.length+' topic'+(s.topics.length>1?'s':'')+' selected':'All Topics';
+    const yearSummary=(s.years&&s.years.length)?s.years.length+' year'+(s.years.length>1?'s':'')+' selected':'All Years';
     return '<div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;">'
       +'<div style="font-weight:700;color:var(--text);margin-bottom:8px;">'+meta.icon+' '+meta.name+(k==='english'?' <span style="color:var(--muted);font-weight:400;font-size:0.7rem;">(compulsory)</span>':'')+'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">'
@@ -6089,17 +6110,67 @@ function renderJambPerSubjSettings(){
         +'<div><label class="af-label">Time (mins)</label><input type="number" min="5" class="af-input jamb-subj-time" data-subj="'+k+'" value="'+s.time+'" onchange="updateJambSetting(\''+k+'\',\'time\',this.value)"></div>'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
-        +'<div><label class="af-label">Topics (leave blank = all, tap to multi-select)</label><select multiple size="4" class="af-input" style="height:auto;" onchange="updateJambSettingMulti(\''+k+'\',\'topics\',this)">'+topics.map(t=>'<option value="'+t+'"'+((s.topics||[]).includes(t)?' selected':'')+'>'+t+'</option>').join('')+'</select></div>'
-        +'<div><label class="af-label">Years (leave blank = all, tap to multi-select)</label><select multiple size="4" class="af-input" style="height:auto;" onchange="updateJambSettingMulti(\''+k+'\',\'years\',this)">'+years.map(y=>'<option value="'+y+'"'+((s.years||[]).map(String).includes(String(y))?' selected':'')+'>'+y+'</option>').join('')+'</select></div>'
+        +'<div><label class="af-label">Topics</label><button type="button" onclick="openJambMultiSelect(\''+k+'\',\'topics\')" class="af-input" style="text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">'+topicSummary+'<span style="color:var(--muted);">▾</span></button></div>'
+        +'<div><label class="af-label">Years</label><button type="button" onclick="openJambMultiSelect(\''+k+'\',\'years\')" class="af-input" style="text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">'+yearSummary+'<span style="color:var(--muted);">▾</span></button></div>'
       +'</div>'
     +'</div>';
   }).join('');
 }
 
-function updateJambSettingMulti(subj,field,selectEl){
+// Tap-to-open dropdown panel with checkboxes — replaces the native
+// multi-select box, which renders as an oversized list on mobile.
+function openJambMultiSelect(subj,field){
+  const s=jambSubjectSettings[subj]||{count:20,time:20,topics:[],years:[]};
+  const options=field==='topics'?getJambTopics(subj):getJambYears(subj);
+  const current=(s[field]||[]).map(String);
+  const label=field==='topics'?'Topics':'Years';
+  const overlay=document.createElement('div');
+  overlay.id='jambMultiSelectOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:flex-end;';
+  overlay.innerHTML='<div style="background:var(--card);width:100%;max-height:70vh;border-radius:18px 18px 0 0;padding:18px;overflow-y:auto;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
+      +'<div style="font-weight:700;color:var(--gold);font-size:1rem;">Select '+label+'</div>'
+      +'<button onclick="closeJambMultiSelect()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:12px;">'
+      +'<button onclick="jambMultiSelectAll(\''+subj+'\',\''+field+'\')" style="flex:1;background:var(--accent);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px;font-size:0.75rem;cursor:pointer;">Select All</button>'
+      +'<button onclick="jambMultiSelectClear(\''+subj+'\',\''+field+'\')" style="flex:1;background:var(--accent);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px;font-size:0.75rem;cursor:pointer;">Clear (= All)</button>'
+    +'</div>'
+    +'<div id="jambMultiSelectList">'
+    +(options.length?options.map(o=>{
+      const checked=current.includes(String(o));
+      return '<label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:0.88rem;color:var(--text);">'
+        +'<input type="checkbox" value="'+o+'" '+(checked?'checked':'')+' onchange="jambMultiSelectToggle(\''+subj+'\',\''+field+'\',this)" style="width:18px;height:18px;">'
+        +o+'</label>';
+    }).join(''):'<div style="color:var(--muted);text-align:center;padding:20px;">No '+label.toLowerCase()+' tagged for this subject yet.</div>')
+    +'</div>'
+    +'<button onclick="closeJambMultiSelect()" style="width:100%;background:var(--gold);color:#fff;border:none;border-radius:12px;padding:12px;font-weight:700;margin-top:14px;cursor:pointer;">Done</button>'
+  +'</div>';
+  document.body.appendChild(overlay);
+}
+function closeJambMultiSelect(){
+  const el=document.getElementById('jambMultiSelectOverlay');
+  if(el)el.remove();
+  renderJambPerSubjSettings();
+}
+function jambMultiSelectToggle(subj,field,checkboxEl){
   if(!jambSubjectSettings[subj])jambSubjectSettings[subj]={count:20,time:20,topics:[],years:[]};
-  const values=Array.from(selectEl.selectedOptions).map(o=>field==='years'?parseInt(o.value):o.value);
-  jambSubjectSettings[subj][field]=values;
+  const val=field==='years'?parseInt(checkboxEl.value):checkboxEl.value;
+  let arr=jambSubjectSettings[subj][field]||[];
+  if(checkboxEl.checked)arr=[...arr,val];
+  else arr=arr.filter(v=>String(v)!==String(val));
+  jambSubjectSettings[subj][field]=arr;
+}
+function jambMultiSelectAll(subj,field){
+  const options=field==='topics'?getJambTopics(subj):getJambYears(subj);
+  if(!jambSubjectSettings[subj])jambSubjectSettings[subj]={count:20,time:20,topics:[],years:[]};
+  jambSubjectSettings[subj][field]=[...options];
+  document.querySelectorAll('#jambMultiSelectList input[type="checkbox"]').forEach(cb=>cb.checked=true);
+}
+function jambMultiSelectClear(subj,field){
+  if(!jambSubjectSettings[subj])jambSubjectSettings[subj]={count:20,time:20,topics:[],years:[]};
+  jambSubjectSettings[subj][field]=[];
+  document.querySelectorAll('#jambMultiSelectList input[type="checkbox"]').forEach(cb=>cb.checked=false);
 }
 
 function updateJambSetting(subj,field,value){
@@ -6257,7 +6328,7 @@ function renderJAMBQuestion(idx){
     }
   }
 
-  document.getElementById('jambQText').innerHTML=diffHtml+q.q;
+  document.getElementById('jambQText').innerHTML=diffHtml+formatMathText(q.q);
   document.getElementById('jambExplanation').style.display='none';
 
   const opts=document.getElementById('jambOptions');
@@ -6267,7 +6338,7 @@ function renderJAMBQuestion(idx){
   q.opts.forEach((o,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn'+(chosen===i?' selected':'');
-    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+o+'</span>';
+    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+formatMathText(o)+'</span>';
     btn.onclick=()=>selectJAMBAnswer(i); // always changeable — no reveal until submit
     opts.appendChild(btn);
   });
@@ -6661,11 +6732,11 @@ function renderJambReviewList(breakdown,backFn){
     const badge=skip?'<span class="ri-badge skipped">Skipped</span>':correct?'<span class="ri-badge correct">✓ Correct</span>':'<span class="ri-badge wrong">✗ Wrong</span>';
     const meta=JAMB_SUBJECTS[q.subject]||{icon:'📚',name:q.subjLabel||q.subject};
     let ah='';
-    if(!skip)ah+='<div class="ri-ans you">Your answer: '+lbls[q.userAns]+'. '+q.opts[q.userAns]+'</div>';
+    if(!skip)ah+='<div class="ri-ans you">Your answer: '+lbls[q.userAns]+'. '+formatMathText(q.opts[q.userAns])+'</div>';
     else ah+='<div class="ri-ans you">No answer selected</div>';
-    ah+='<div class="ri-ans correct-ans">✓ Correct: '+lbls[q.ans]+'. '+q.opts[q.ans]+'</div>';
-    if(q.explanation)ah+='<div style="margin-top:6px;font-size:0.78rem;color:var(--muted);">💡 '+q.explanation+'</div>';
-    html+='<div class="review-item '+cls+'"><div class="ri-header"><span>'+meta.icon+' '+(q.subjLabel||meta.name)+' — Q'+(i+1)+'</span>'+badge+'</div><div class="ri-q">'+q.q+'</div>'+ah+'</div>';
+    ah+='<div class="ri-ans correct-ans">✓ Correct: '+lbls[q.ans]+'. '+formatMathText(q.opts[q.ans])+'</div>';
+    if(q.explanation)ah+='<div style="margin-top:6px;font-size:0.78rem;color:var(--muted);">💡 '+formatMathText(q.explanation)+'</div>';
+    html+='<div class="review-item '+cls+'"><div class="ri-header"><span>'+meta.icon+' '+(q.subjLabel||meta.name)+' — Q'+(i+1)+'</span>'+badge+'</div><div class="ri-q">'+formatMathText(q.q)+'</div>'+ah+'</div>';
   });
   document.getElementById('jambReviewBody').innerHTML=html;
   window._jambReviewBackFn=backFn;
@@ -8666,7 +8737,7 @@ function renderDuelQuestion(idx){
   if(!q){endDuel(false);return;}
   const total=duelState.questions.length;
   document.getElementById('duelQNum').textContent='Q '+(idx+1)+' / '+total;
-  document.getElementById('duelQText').textContent=q.q||q;
+  document.getElementById('duelQText').innerHTML=formatMathText(q.q||q);
   document.getElementById('duelProgressBar').style.width=((idx+1)/total*100)+'%';
   document.getElementById('duelExplanation').style.display='none';
   const opts=document.getElementById('duelOptions');
@@ -8676,7 +8747,7 @@ function renderDuelQuestion(idx){
   qOpts.forEach((o,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn';
-    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+o+'</span>';
+    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+formatMathText(o)+'</span>';
     if(duelState.answers[idx]!==undefined){
       if(i===q.ans) btn.classList.add('correct');
       else if(i===duelState.answers[idx]) btn.classList.add('wrong');
@@ -9103,7 +9174,7 @@ function renderLiveQuizQuestion(idx){
   const q=liveQuiz.questions[idx];
   const total=liveQuiz.questions.length;
   document.getElementById('lqQCounter').textContent='Q '+(idx+1)+'/'+total;
-  document.getElementById('lqQText').textContent=q.q||q;
+  document.getElementById('lqQText').innerHTML=formatMathText(q.q||q);
   document.getElementById('lqFeedback').style.display='none';
   const opts=document.getElementById('lqOptions');
   opts.innerHTML='';
@@ -9119,7 +9190,7 @@ function renderLiveQuizQuestion(idx){
   optArr.forEach((o,i)=>{
     const btn=document.createElement('button');
     btn.className='option-btn';
-    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+o+'</span>';
+    btn.innerHTML='<span class="opt-label">'+lbls[i]+'</span><span class="opt-radio"></span><span>'+formatMathText(o)+'</span>';
     btn.onclick=async()=>{
       if(lqAnswered)return;
       lqAnswered=true;
