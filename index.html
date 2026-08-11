@@ -71,6 +71,10 @@
   .timer{background:rgba(217,119,6,0.08);border:1.5px solid var(--warn);color:var(--warn);font-size:0.95rem;font-weight:700;border-radius:20px;padding:6px 16px;min-width:76px;text-align:center;}
   .timer.warn{border-color:var(--warn);color:var(--warn);animation:pulse 1s infinite;}
   .timer.danger{border-color:var(--wrong);color:var(--wrong);animation:pulse 0.5s infinite;background:rgba(220,38,38,0.08);}
+  .jamb-top-submit{background:#ea580c;border:none;color:#fff;border-radius:18px;padding:7px 12px;cursor:pointer;font-size:0.76rem;font-weight:800;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+  .jamb-top-submit:hover{background:#c2410c;}
+  @media(max-width:420px){.jamb-top-submit{padding:6px 9px;font-size:0.7rem;}.quiz-icons-row{gap:7px;}.timer{min-width:68px;padding:6px 10px;}}
+
   .quiz-header .subject-badge{display:inline-block;background:none;color:var(--correct);font-size:0.85rem;font-weight:700;padding:2px 2px 8px;border-bottom:2.5px solid var(--correct);text-transform:none;letter-spacing:normal;}
   .quiz-progress-row{display:flex;align-items:center;gap:10px;padding:12px 0;}
   .q-counter{flex:1;background:var(--accent);border:1px solid var(--line);color:var(--text);font-size:0.9rem;font-weight:600;border-radius:22px;padding:9px 18px;text-align:center;}
@@ -407,16 +411,30 @@
   .hist-rank-bar-fill{height:100%;border-radius:4px;transition:width 0.5s;}
   .hist-rank-pct{font-size:0.75rem;font-weight:700;min-width:38px;text-align:right;}
 
-/* Scientific notation rendered by formatMathText() */
-.frac{display:inline-flex;flex-direction:column;vertical-align:middle;line-height:1;text-align:center;margin:0 2px;font-size:.9em;}
-.frac>span:first-child{border-bottom:1px solid currentColor;padding:0 2px;}
-.frac>span:last-child{padding:1px 2px 0;}
-.math-mixed{display:inline-flex;align-items:center;gap:2px;vertical-align:middle;}
-.mixed-whole{font-size:1em;}
-.nuclide{display:inline-block;line-height:1;margin-right:.05em;}
-.nuclide sup,.nuclide sub{font-size:.7em;line-height:0;position:relative;}
-.nuclide sup{vertical-align:top;}
-.nuclide sub{vertical-align:bottom;}
+/* ===== Scientific notation rendering ===== */
+.fraction{
+  display:inline-flex;
+  flex-direction:column;
+  vertical-align:middle;
+  text-align:center;
+  line-height:1.0;
+  margin:0 0.12em;
+  min-width:1.1em;
+}
+.fraction .frac-num{
+  display:block;
+  border-bottom:1.5px solid currentColor;
+  padding:0 0.12em 0.08em;
+}
+.fraction .frac-den{
+  display:block;
+  padding:0.08em 0.12em 0;
+}
+.mixed-number{white-space:nowrap;}
+.nuclear-symbol{display:inline-block;position:relative;line-height:1;margin:0 .08em;}
+.nuclear-symbol sup,.nuclear-symbol sub{font-size:.62em;line-height:1;position:relative;}
+.nuclear-symbol sup{vertical-align:top;}
+.nuclear-symbol sub{vertical-align:bottom;}
 </style>
 </head>
 <body>
@@ -610,7 +628,7 @@
       <button class="nav-btn" id="nextBtn" onclick="navigate(1)">Next ▶</button>
     </div>
     <div style="text-align:center;margin-top:10px;">
-      <button class="submit-btn" id="submitQuizBtn" onclick="confirmSubmit()" style="display:none;">✅ Submit Exam</button>
+      <button class="submit-btn" id="submitQuizBtn" onclick="confirmSubmit()" style="display:inline-block;">✅ Submit Exam</button>
     </div>
   </div>
   <div class="q-map" id="qMap">
@@ -953,6 +971,7 @@ Ans: B"></textarea>
       <button class="icon-circle-btn" onclick="jambToggleFlag()" title="Flag this question">🔖</button>
       <button class="icon-circle-btn" onclick="toggleCalc()" title="Scientific Calculator">🧮</button>
       <div class="spacer"></div>
+      <button class="jamb-top-submit" id="jambTopSubmitBtn" onclick="confirmJAMBSubmit()" title="Submit JAMB Exam">Submit</button>
       <div class="timer" id="jambTimer">30:00</div>
     </div>
     <span class="subject-badge" id="jambBadge">JAMB</span>
@@ -974,7 +993,7 @@ Ans: B"></textarea>
       <button class="nav-btn" id="jambNext" onclick="jambNavigate(1)">Next ▶</button>
     </div>
     <div style="text-align:center;margin-top:10px;">
-      <button class="submit-btn" id="jambSubmitBtn" onclick="confirmJAMBSubmit()" style="display:none;">✅ Submit JAMB Exam</button>
+      <button class="submit-btn" id="jambSubmitBtn" onclick="confirmJAMBSubmit()" style="display:inline-block;">✅ Submit JAMB Exam</button>
     </div>
   </div>
 </div>
@@ -3403,49 +3422,76 @@ function startMixed(){
 // students — e.g. "cm^3" -> "cm³" (rendered), "H_2O" -> "H₂O" (rendered).
 // Applied wherever question/option text is displayed.
 function formatMathText(str){
-  if(!str)return str;
+  if(str===null||str===undefined)return '';
   let out=String(str);
 
-  // Escape HTML first; all special formatting below is generated safely here.
-  out=out.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // ============================================================
+  // SCIENTIFIC / CHEMISTRY FORMATTER
+  // Admin input is intentionally plain text so it survives paste.
+  // Examples:
+  //   H_2SO_4       -> H₂SO₄
+  //   SO_4^-2       -> SO₄⁻²
+  //   cm^3          -> cm³
+  //   [alpha]       -> α
+  //   [288,92]U     -> ²⁸⁸₉₂U
+  //   [4/5]         -> stacked fraction
+  //   [4 2/4]       -> mixed number with stacked fraction
+  // ============================================================
 
-  // Nuclear notation FIRST. Write [288,92]U -> ²⁸⁸₉₂U.
-  // Also accepts 288_92U.
-  out=out.replace(/\[(\d+),(\d+)\]([A-Z][a-z]?)/g,'<span class="nuclide"><sup>$1</sup><sub>$2</sub>$3</span>');
-  out=out.replace(/(?<![\w>])(\d+)_(\d+)([A-Z][a-z]?)/g,'<span class="nuclide"><sup>$1</sup><sub>$2</sub>$3</span>');
+  // Repair common UTF-8-as-Windows-1252 mojibake from pasted/database text.
+  out=out
+    .replace(/â†'/g,'→').replace(/â†’/g,'→').replace(/â†/g,'←')
+    .replace(/â†“/g,'↓').replace(/â†‘/g,'↑')
+    .replace(/â‡Œ/g,'⇌').replace(/â‡’/g,'⇒').replace(/â‡/g,'⇐')
+    .replace(/â‰¤/g,'≤').replace(/â‰¥/g,'≥').replace(/â‰ /g,'≠')
+    .replace(/âˆž/g,'∞').replace(/Â°/g,'°')
+    .replace(/Â·/g,'·').replace(/â€¢/g,'·').replace(/Â±/g,'±')
+    .replace(/Âµ/g,'µ').replace(/âˆ’/g,'−').replace(/âˆ¼/g,'∼');
 
-  // Subscripts: ONLY the number immediately after _. This fixes H_2SO_4.
-  out=out.replace(/_(-?\d+(?:\.\d+)?)/g,'<sub>$1</sub>');
+  // Normalise common old charge styles before rendering.
+  out=out.replace(/\^(\d+)([+-])/g,'^$2$1');
 
-  // Superscripts: powers and charges. Examples: x^2, cm^3, 10^-4, Cu^+2.
-  out=out.replace(/\^(-?\d+(?:\.\d+)?)/g,'<sup>$1</sup>');
-  out=out.replace(/\^([+-])(\d+)/g,'<sup>$1$2</sup>');
-  out=out.replace(/\^([A-Za-z]+)/g,'<sup>$1</sup>');
+  // Nuclear notation: [mass,atomic]Element -> mass above atomic.
+  out=out.replace(/\[(\d+)\s*,\s*(\d+)\]([A-Z][a-z]?)/g,
+    '<span class="nuclear-symbol"><sup>$1</sup><sub>$2</sub>$3</span>');
 
-  // Greek letters and common scientific symbols.
-  const symbols={
-    '[alpha]':'α','[beta]':'β','[gamma]':'γ','[delta]':'Δ','[theta]':'θ',
-    '[lambda]':'λ','[mu]':'μ','[pi]':'π','[sigma]':'σ','[phi]':'φ',
-    '[omega]':'ω','[Omega]':'Ω','[rho]':'ρ','[tau]':'τ','[epsilon]':'ε',
-    '[zeta]':'ζ','[eta]':'η','[kappa]':'κ','[nu]':'ν','[xi]':'ξ',
-    '[chi]':'χ','[psi]':'ψ','[infinity]':'∞','[degree]':'°','[pm]':'±',
-    '[times]':'×','[div]':'÷','[le]':'≤','[ge]':'≥','[neq]':'≠',
-    '[approx]':'≈','[propto]':'∝','[rightarrow]':'→','[leftarrow]':'←',
-    '[uparrow]':'↑','[downarrow]':'↓','[equilibrium]':'⇌','[therefore]':'∴',
-    '[perp]':'⊥','[angle]':'∠','[parallel]':'∥','[integral]':'∫','[sum]':'Σ',
-    '[deltaH]':'ΔH','[deltaT]':'ΔT','[deltaG]':'ΔG','[deltaS]':'ΔS'
-  };
-  for(const [k,v] of Object.entries(symbols)) out=out.replaceAll(k,v);
-
-  // Fractions. Write [4/5] or [4 2/4] to create proper fractions.
+  // Fractions. Brackets make the intent unambiguous for the parser.
   out=out.replace(/\[(\d+)\s+(\d+)\/(\d+)\]/g,
-    '<span class="math-mixed"><span class="mixed-whole">$1</span><span class="frac"><span>$2</span><span>$3</span></span></span>');
+    '<span class="mixed-number">$1 <span class="fraction"><span class="frac-num">$2</span><span class="frac-den">$3</span></span></span>');
   out=out.replace(/\[(\d+)\/(\d+)\]/g,
-    '<span class="frac"><span>$1</span><span>$2</span></span>');
+    '<span class="fraction"><span class="frac-num">$1</span><span class="frac-den">$2</span></span>');
+
+  // Special scientific / mathematical symbols.
+  const symbols={
+    '[alpha]':'α','[beta]':'β','[gamma]':'γ','[delta]':'δ',
+    '[theta]':'θ','[lambda]':'λ','[mu]':'μ','[pi]':'π',
+    '[sigma]':'σ','[phi]':'φ','[omega]':'ω','[rho]':'ρ',
+    '[epsilon]':'ε','[Delta]':'Δ','[Lambda]':'Λ','[Sigma]':'Σ',
+    '[Phi]':'Φ','[Omega]':'Ω','[infinity]':'∞','[degree]':'°',
+    '[pm]':'±','[plusminus]':'±','[times]':'×','[div]':'÷',
+    '[le]':'≤','[ge]':'≥','[neq]':'≠','[approx]':'≈',
+    '[propto]':'∝','[therefore]':'∴','[perp]':'⊥','[angle]':'∠',
+    '[parallel]':'∥','[integral]':'∫','[sum]':'Σ',
+    '[rightarrow]':'→','[->]':'→','[-->]':'→',
+    '[leftarrow]':'←','[<-]':'←',
+    '[reversible]':'⇌','[equilibrium]':'⇌','[equil]':'⇌',
+    '[Rightarrow]':'⇒','[Leftarrow]':'⇐',
+    '[uparrow]':'↑','[downarrow]':'↓'
+  };
+  Object.keys(symbols).forEach(k=>{out=out.split(k).join(symbols[k]);});
 
   // Chemical states.
-  out=out.replace(/\[solid\]/g,'(s)').replace(/\[liquid\]/g,'(l)')
-         .replace(/\[gas\]/g,'(g)').replace(/\[aqueous\]/g,'(aq)');
+  out=out.replace(/\[solid\]/g,'(s)')
+           .replace(/\[liquid\]/g,'(l)')
+           .replace(/\[gas\]/g,'(g)')
+           .replace(/\[aqueous\]/g,'(aq)');
+
+  // IMPORTANT: only digits are subscripts. This prevents H_2SO_4
+  // from becoming H<sub>2SO_4</sub>.
+  out=out.replace(/_(-?\d+)/g,'<sub>$1</sub>');
+
+  // Superscript: signed/unsigned numbers, or a single letter.
+  out=out.replace(/\^([+-]?\d+|[A-Za-z])/g,'<sup>$1</sup>');
 
   return out;
 }
@@ -3482,7 +3528,7 @@ function renderQuestion(){
   
   document.getElementById('prevBtn').disabled=currentIndex===0;
   document.getElementById('nextBtn').style.display=currentIndex<total-1?'inline-block':'none';
-  document.getElementById('submitQuizBtn').style.display=currentIndex===total-1?'inline-block':'none';
+  document.getElementById('submitQuizBtn').style.display='inline-block';
   const fb=document.getElementById('flagBtn');
   fb.className=flagged.has(currentIndex)?'icon-circle-btn flagged':'icon-circle-btn';
   fb.title=flagged.has(currentIndex)?'Flagged - tap to unflag':'Flag this question';
@@ -6358,10 +6404,16 @@ function renderJAMBQuestion(idx){
   });
 
   const totalQ=jambAllQuestions.length;
+  const currentBoundary=jambSubjBoundaries[si]||{start:0,end:totalQ-1,label:q.subjLabel};
+  // Real-JAMB-style numbering: restart at 1 for every subject.
+  // Example: English 1/5, Chemistry 1/25, Biology 1/5, Physics 1/5.
+  const subjectTotal=Math.max(0,currentBoundary.end-currentBoundary.start+1);
+  const subjectPosition=Math.max(1,jambGlobalIndex-currentBoundary.start+1);
   document.getElementById('jambBadge').textContent=(JAMB_SUBJECTS[q.subject]||{name:'JAMB'}).icon+' '+q.subjLabel;
-  document.getElementById('jambCounter').textContent='Q '+(jambGlobalIndex+1)+' / '+totalQ;
-  document.getElementById('jambProgress').style.width=(((jambGlobalIndex+1)/totalQ)*100)+'%';
-  document.getElementById('jambQNum').textContent='QUESTION '+(jambGlobalIndex+1);
+  // Number each subject independently: e.g. Physics 1 / 20, not 61 / 120.
+  document.getElementById('jambCounter').textContent='Q '+subjectPosition+' / '+subjectTotal;
+  document.getElementById('jambProgress').style.width=((subjectPosition/subjectTotal)*100)+'%';
+  document.getElementById('jambQNum').textContent='QUESTION '+subjectPosition+' OF '+subjectTotal;
 
   // Difficulty badge
   const diff=q.difficulty||'moderate';
@@ -6398,8 +6450,12 @@ function renderJAMBQuestion(idx){
   document.getElementById('jambExplanation').style.display='none';
 
   document.getElementById('jambPrev').disabled=jambGlobalIndex===0;
-  document.getElementById('jambNext').textContent=jambGlobalIndex===totalQ-1?'Finish':'Next ▶';
-  document.getElementById('jambSubmitBtn').style.display=jambGlobalIndex===totalQ-1?'block':'none';
+  const isLastOverall=jambGlobalIndex===totalQ-1;
+  const isLastInSubject=subjectPosition===subjectTotal;
+  document.getElementById('jambNext').textContent=isLastOverall?'Finish':(isLastInSubject?'Next Subject ▶':'Next ▶');
+  document.getElementById('jambSubmitBtn').style.display='block';
+  const topSubmit=document.getElementById('jambTopSubmitBtn');
+  if(topSubmit) topSubmit.style.display='inline-block';
 }
 
 function selectJAMBAnswer(optIdx){
