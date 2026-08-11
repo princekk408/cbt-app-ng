@@ -406,6 +406,17 @@
   .hist-rank-bar-bg{flex:1;height:8px;background:#333;border-radius:4px;overflow:hidden;}
   .hist-rank-bar-fill{height:100%;border-radius:4px;transition:width 0.5s;}
   .hist-rank-pct{font-size:0.75rem;font-weight:700;min-width:38px;text-align:right;}
+
+/* Scientific notation rendered by formatMathText() */
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;line-height:1;text-align:center;margin:0 2px;font-size:.9em;}
+.frac>span:first-child{border-bottom:1px solid currentColor;padding:0 2px;}
+.frac>span:last-child{padding:1px 2px 0;}
+.math-mixed{display:inline-flex;align-items:center;gap:2px;vertical-align:middle;}
+.mixed-whole{font-size:1em;}
+.nuclide{display:inline-block;line-height:1;margin-right:.05em;}
+.nuclide sup,.nuclide sub{font-size:.7em;line-height:0;position:relative;}
+.nuclide sup{vertical-align:top;}
+.nuclide sub{vertical-align:bottom;}
 </style>
 </head>
 <body>
@@ -3394,8 +3405,48 @@ function startMixed(){
 function formatMathText(str){
   if(!str)return str;
   let out=String(str);
-  out=out.replace(/\^(-?[A-Za-z0-9]+)/g,'<sup>$1</sup>');
-  out=out.replace(/_(-?[A-Za-z0-9]+)/g,'<sub>$1</sub>');
+
+  // Escape HTML first; all special formatting below is generated safely here.
+  out=out.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Nuclear notation FIRST. Write [288,92]U -> ²⁸⁸₉₂U.
+  // Also accepts 288_92U.
+  out=out.replace(/\[(\d+),(\d+)\]([A-Z][a-z]?)/g,'<span class="nuclide"><sup>$1</sup><sub>$2</sub>$3</span>');
+  out=out.replace(/(?<![\w>])(\d+)_(\d+)([A-Z][a-z]?)/g,'<span class="nuclide"><sup>$1</sup><sub>$2</sub>$3</span>');
+
+  // Subscripts: ONLY the number immediately after _. This fixes H_2SO_4.
+  out=out.replace(/_(-?\d+(?:\.\d+)?)/g,'<sub>$1</sub>');
+
+  // Superscripts: powers and charges. Examples: x^2, cm^3, 10^-4, Cu^+2.
+  out=out.replace(/\^(-?\d+(?:\.\d+)?)/g,'<sup>$1</sup>');
+  out=out.replace(/\^([+-])(\d+)/g,'<sup>$1$2</sup>');
+  out=out.replace(/\^([A-Za-z]+)/g,'<sup>$1</sup>');
+
+  // Greek letters and common scientific symbols.
+  const symbols={
+    '[alpha]':'α','[beta]':'β','[gamma]':'γ','[delta]':'Δ','[theta]':'θ',
+    '[lambda]':'λ','[mu]':'μ','[pi]':'π','[sigma]':'σ','[phi]':'φ',
+    '[omega]':'ω','[Omega]':'Ω','[rho]':'ρ','[tau]':'τ','[epsilon]':'ε',
+    '[zeta]':'ζ','[eta]':'η','[kappa]':'κ','[nu]':'ν','[xi]':'ξ',
+    '[chi]':'χ','[psi]':'ψ','[infinity]':'∞','[degree]':'°','[pm]':'±',
+    '[times]':'×','[div]':'÷','[le]':'≤','[ge]':'≥','[neq]':'≠',
+    '[approx]':'≈','[propto]':'∝','[rightarrow]':'→','[leftarrow]':'←',
+    '[uparrow]':'↑','[downarrow]':'↓','[equilibrium]':'⇌','[therefore]':'∴',
+    '[perp]':'⊥','[angle]':'∠','[parallel]':'∥','[integral]':'∫','[sum]':'Σ',
+    '[deltaH]':'ΔH','[deltaT]':'ΔT','[deltaG]':'ΔG','[deltaS]':'ΔS'
+  };
+  for(const [k,v] of Object.entries(symbols)) out=out.replaceAll(k,v);
+
+  // Fractions. Write [4/5] or [4 2/4] to create proper fractions.
+  out=out.replace(/\[(\d+)\s+(\d+)\/(\d+)\]/g,
+    '<span class="math-mixed"><span class="mixed-whole">$1</span><span class="frac"><span>$2</span><span>$3</span></span></span>');
+  out=out.replace(/\[(\d+)\/(\d+)\]/g,
+    '<span class="frac"><span>$1</span><span>$2</span></span>');
+
+  // Chemical states.
+  out=out.replace(/\[solid\]/g,'(s)').replace(/\[liquid\]/g,'(l)')
+         .replace(/\[gas\]/g,'(g)').replace(/\[aqueous\]/g,'(aq)');
+
   return out;
 }
 
