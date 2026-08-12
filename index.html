@@ -138,6 +138,46 @@
   .action-btn.primary{background:var(--gold);color:#000;}
   .action-btn.secondary{background:var(--accent);color:#fff;}
   .action-btn.review{background:var(--green);color:#fff;}
+  /* ===== POST-SUBMISSION INTERACTIVE ANSWER REVIEW ===== */
+  .review-nav-shell{display:flex;flex-direction:column;min-height:100vh;background:var(--dark);}
+  .review-nav-header{background:var(--card);padding:10px 16px 0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;}
+  .review-nav-icons{display:flex;align-items:center;gap:10px;padding-bottom:10px;}
+  .review-nav-icons .spacer{flex:1;}
+  .review-icon{width:38px;height:38px;border-radius:50%;background:var(--accent);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:1rem;}
+  .review-back-circle{width:38px;height:38px;border-radius:50%;background:var(--accent);border:1px solid var(--line);color:var(--text);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .review-subject-tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none;}
+  .review-subject-tabs::-webkit-scrollbar{display:none;}
+  .review-subject-tab{flex:0 0 auto;background:transparent;border:none;border-bottom:2.5px solid transparent;color:var(--muted);padding:5px 10px 7px;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .review-subject-tab.active{color:var(--correct);border-bottom-color:var(--correct);}
+  .review-progress-row{display:flex;align-items:center;gap:10px;padding:10px 0 12px;}
+  .review-q-counter{flex:1;background:var(--accent);border:1px solid var(--line);color:var(--text);font-size:.9rem;font-weight:600;border-radius:22px;padding:9px 18px;text-align:center;}
+  .review-chev{width:36px;height:36px;border-radius:50%;background:var(--correct);color:#fff;border:none;font-size:1.15rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .review-chev:disabled{opacity:.35;cursor:default;}
+  .review-body-nav{flex:1;padding:22px 20px 60px;max-width:720px;width:100%;margin:0 auto;}
+  .review-status{display:inline-flex;align-items:center;gap:6px;border-radius:18px;padding:5px 12px;font-size:.72rem;font-weight:800;margin-bottom:14px;}
+  .review-status.correct{background:rgba(22,163,74,.12);color:var(--correct);border:1px solid var(--correct);}
+  .review-status.wrong{background:rgba(220,38,38,.10);color:var(--wrong);border:1px solid var(--wrong);}
+  .review-status.skipped{background:var(--accent);color:var(--muted);border:1px solid var(--line);}
+  .review-q-text{font-size:1.02rem;color:var(--text);line-height:1.6;margin-bottom:22px;}
+  .review-options{display:flex;flex-direction:column;gap:10px;}
+  .review-option{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:13px 16px;text-align:left;color:var(--text);font-size:.95rem;display:flex;align-items:center;gap:12px;}
+  .review-option .ro-label{width:22px;font-weight:700;font-size:.82rem;color:var(--muted);flex-shrink:0;}
+  .review-option .ro-radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;position:relative;}
+  .review-option.selected{border-color:var(--wrong);background:rgba(220,38,38,.08);}
+  .review-option.selected .ro-radio{border-color:var(--wrong);}
+  .review-option.selected .ro-radio:after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--wrong);}
+  .review-option.correct{border-color:var(--correct);background:rgba(22,163,74,.08);}
+  .review-option.correct .ro-radio{border-color:var(--correct);}
+  .review-option.correct .ro-radio:after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--correct);}
+  .review-option.selected.correct{border-color:var(--correct);background:rgba(22,163,74,.08);}
+  .review-option.selected.correct .ro-radio{border-color:var(--correct);}
+  .review-option.selected.correct .ro-radio:after{background:var(--correct);}
+  .review-explanation{margin-top:16px;background:var(--accent);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:.85rem;color:var(--text);line-height:1.5;}
+  .review-explanation strong{color:var(--gold);}
+  .review-bottom-nav{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:24px;}
+  .review-nav-btn{background:var(--accent);border:1px solid var(--line);color:var(--text);border-radius:22px;padding:10px 22px;cursor:pointer;font-size:.9rem;}
+  .review-nav-btn:disabled{opacity:.35;cursor:default;}
+  .review-summary-chip{font-size:.72rem;color:var(--muted);text-align:center;}
   #reviewScreen{display:none;flex-direction:column;min-height:100vh;background:var(--dark);}
   .review-header{background:var(--card);padding:14px 18px;display:flex;align-items:center;gap:14px;border-bottom:2px solid #333;}
   .review-header h2{color:var(--gold);font-size:1.1rem;}
@@ -661,9 +701,23 @@
     <button class="action-btn secondary" onclick="showSplash()">🏠 Home</button>
   </div>
 </div>
-<div id="reviewScreen">
-  <div class="review-header"><button class="back-btn" onclick="showResults()">← Back</button><h2>Answer Review</h2></div>
-  <div class="review-body" id="reviewBody"></div>
+<div id="reviewScreen" class="review-nav-shell">
+  <div class="review-nav-header">
+    <div class="review-nav-icons">
+      <button class="review-back-circle" onclick="showResults()" title="Back">←</button>
+      <div class="review-icon">🔖</div>
+      <div class="review-icon">🧮</div>
+      <div class="spacer"></div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);">ANSWER REVIEW</div>
+    </div>
+    <div class="review-subject-tabs" id="reviewSubjectTabs"></div>
+    <div class="review-progress-row">
+      <span class="review-q-counter" id="reviewQCounter">Q 1 / 50</span>
+      <button class="review-chev" id="reviewNextTop" onclick="reviewNavigate(1)" title="Next question">›</button>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="reviewProgressFill" style="width:2%"></div></div>
+  <div class="review-body-nav" id="reviewBody"></div>
 </div>
 <div id="historyScreen">
   <div class="history-header"><button class="back-btn" onclick="showSplash()">← Back</button><h2>📊 Performance History</h2></div>
@@ -831,10 +885,23 @@ Ans: B"></textarea>
 </div>
 
 <!-- ===== JAMB ANSWER REVIEW ===== -->
-<div id="jambReviewScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);padding:20px;">
-  <button class="back-btn" style="align-self:flex-start;margin-bottom:16px;" onclick="(window._jambReviewBackFn||showSplash)()">← Back</button>
-  <h2 style="color:var(--gold);margin-bottom:14px;">📝 Answer Review</h2>
-  <div id="jambReviewBody"></div>
+<div id="jambReviewScreen" class="review-nav-shell">
+  <div class="review-nav-header">
+    <div class="review-nav-icons">
+      <button class="review-back-circle" onclick="(window._jambReviewBackFn||showSplash)()" title="Back">←</button>
+      <div class="review-icon">🔖</div>
+      <div class="review-icon">🧮</div>
+      <div class="spacer"></div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);">ANSWER REVIEW</div>
+    </div>
+    <div class="review-subject-tabs" id="jambReviewSubjectTabs"></div>
+    <div class="review-progress-row">
+      <span class="review-q-counter" id="jambReviewQCounter">Q 1 / 40</span>
+      <button class="review-chev" id="jambReviewNextTop" onclick="jambReviewNavigate(1)" title="Next question">›</button>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="jambReviewProgressFill" style="width:2%"></div></div>
+  <div class="review-body-nav" id="jambReviewBody"></div>
 </div>
 
 <!-- ===== PAYMENT / UPGRADE SCREEN ===== -->
@@ -3673,19 +3740,89 @@ function renderResults({correct,wrong,skipped,total,pct,acc,ts,bySub,timeout,ant
 
 // ===== REVIEW — ANSWERS SHOWN AFTER SUBMISSION ONLY =====
 function renderReview(){
-  const b=document.getElementById('reviewBody');b.innerHTML='';
+  const questions=currentSession.map((q,i)=>({...q,_reviewIndex:i}));
+  window._reviewState={questions,currentIndex:0,backFn:showResults,mode:'generic'};
+  buildReviewSubjectTabs('reviewSubjectTabs',questions,subjectMeta,'generic');
+  renderInteractiveReviewQuestion('reviewBody','reviewQCounter','reviewProgressFill','reviewNextTop',questions,0,subjectMeta,'generic');
+}
+
+function buildReviewSubjectTabs(tabId,questions,metaMap,mode){
+  const el=document.getElementById(tabId);
+  if(!el)return;
+  const seen=[];
+  questions.forEach((q,i)=>{
+    const key=mode==='jamb'?(q.subject||q.subjLabel||'mixed'):(q._subj||q.subject||'mixed');
+    if(!seen.includes(key))seen.push(key);
+  });
+  el.innerHTML=seen.map((key,i)=>{
+    const m=metaMap[key]||{icon:'📚',name:key};
+    return '<button class="review-subject-tab'+(i===0?' active':'')+'" data-review-subj="'+String(key).replace(/"/g,'&quot;')+'" onclick="'+mode+'ReviewJumpSubject(\''+String(key).replace(/'/g,"\\'")+'\')">'+m.icon+' '+m.name+'</button>';
+  }).join('');
+}
+
+function reviewSubjectKey(q){
+  return q._subj||q.subject||'mixed';
+}
+
+function reviewNavigate(delta){
+  if(!window._reviewState)return;
+  const st=window._reviewState;
+  st.currentIndex=Math.max(0,Math.min(st.questions.length-1,st.currentIndex+delta));
+  renderInteractiveReviewQuestion('reviewBody','reviewQCounter','reviewProgressFill','reviewNextTop',st.questions,st.currentIndex,subjectMeta,'generic');
+}
+
+function genericReviewJumpSubject(key){
+  if(!window._reviewState)return;
+  const st=window._reviewState;
+  const idx=st.questions.findIndex(q=>reviewSubjectKey(q)===key);
+  if(idx<0)return;
+  st.currentIndex=idx;
+  renderInteractiveReviewQuestion('reviewBody','reviewQCounter','reviewProgressFill','reviewNextTop',st.questions,idx,subjectMeta,'generic');
+}
+
+function renderInteractiveReviewQuestion(bodyId,counterId,progressId,nextId,questions,index,metaMap,mode){
+  const q=questions[index];
+  if(!q)return;
   const lbls=['A','B','C','D','E'];
-  currentSession.forEach((q,i)=>{
-    const ans=answers[i];const correct=ans===q.ans;const skip=ans===undefined;
-    const cls=skip?'ri-skipped':correct?'ri-correct':'ri-wrong';
-    const badge=skip?'<span class="ri-badge skipped">Skipped</span>':correct?'<span class="ri-badge correct">✓ Correct</span>':'<span class="ri-badge wrong">✗ Wrong</span>';
-    const m=subjectMeta[q._subj||q.subject]||{icon:'📚',name:'Mixed'};
-    let ah='';
-    if(!skip)ah+='<div class="ri-ans you">Your answer: '+lbls[ans]+'. '+formatMathText(q.opts[ans])+'</div>';
-    else ah+='<div class="ri-ans you">No answer selected</div>';
-    ah+='<div class="ri-ans correct-ans">✓ Correct: '+lbls[q.ans]+'. '+formatMathText(q.opts[q.ans])+'</div>';
-    if(q.explanation)ah+='<div style="margin-top:6px;font-size:0.78rem;color:var(--muted);">💡 '+formatMathText(q.explanation)+'</div>';
-    b.innerHTML+='<div class="review-item '+cls+'"><div class="ri-header"><span>'+m.icon+' '+m.name+' — Q'+(i+1)+'</span>'+badge+'</div><div class="ri-q">'+formatMathText(q.q)+'</div>'+ah+'</div>';
+  const userAns=mode==='jamb'?q.userAns:answers[q._reviewIndex!==undefined?q._reviewIndex:index];
+  const skip=userAns===undefined||userAns===null;
+  const correct=!skip&&userAns===q.ans;
+  const meta=mode==='jamb'
+    ?(JAMB_SUBJECTS[q.subject]||{icon:'📚',name:q.subjLabel||q.subject||'Mixed'})
+    :(metaMap[q._subj||q.subject]||{icon:'📚',name:q._subj||q.subject||'Mixed'});
+
+  const body=document.getElementById(bodyId);
+  let html='<div class="review-status '+(skip?'skipped':correct?'correct':'wrong')+'">'+
+    (skip?'○ Skipped':correct?'✓ Correct':'✗ Wrong')+'</div>';
+  html+='<div class="q-number">QUESTION '+(index+1)+' OF '+questions.length+'</div>';
+  html+='<div class="review-q-text">'+formatMathText(q.q)+'</div>';
+  html+='<div class="review-options">';
+  (q.opts||[]).forEach((opt,i)=>{
+    const isCorrect=i===q.ans;
+    const isSelected=i===userAns;
+    let cls='review-option';
+    if(isCorrect)cls+=' correct';
+    if(isSelected)cls+=' selected';
+    html+='<div class="'+cls+'"><span class="ro-label">'+lbls[i]+'</span><span class="ro-radio"></span><span>'+formatMathText(opt)+'</span></div>';
+  });
+  html+='</div>';
+  if(skip)html+='<div class="review-explanation"><strong>Your answer:</strong> No answer selected<br><strong>Correct answer:</strong> '+lbls[q.ans]+'. '+formatMathText(q.opts[q.ans])+'</div>';
+  else if(!correct)html+='<div class="review-explanation"><strong>Your answer:</strong> '+lbls[userAns]+'. '+formatMathText(q.opts[userAns])+'<br><strong>Correct answer:</strong> '+lbls[q.ans]+'. '+formatMathText(q.opts[q.ans])+'</div>';
+  if(q.explanation)html+='<div class="review-explanation">💡 <strong>Explanation:</strong> '+formatMathText(q.explanation)+'</div>';
+  html+='<div class="review-bottom-nav">';
+  html+='<button class="review-nav-btn" onclick="'+(mode==='jamb'?'jambReviewNavigate(-1)':'reviewNavigate(-1)')+'" '+(index===0?'disabled':'')+'>◀ Prev</button>';
+  html+='<div class="review-summary-chip">'+meta.icon+' '+meta.name+'</div>';
+  html+='<button class="review-nav-btn" onclick="'+(mode==='jamb'?'jambReviewNavigate(1)':'reviewNavigate(1)')+'" '+(index===questions.length-1?'disabled':'')+'>Next ▶</button>';
+  html+='</div>';
+  body.innerHTML=html;
+
+  document.getElementById(counterId).textContent='Q '+(index+1)+' / '+questions.length;
+  document.getElementById(progressId).style.width=((index+1)/questions.length*100)+'%';
+  document.getElementById(nextId).disabled=index===questions.length-1;
+
+  const tabsId=mode==='jamb'?'jambReviewSubjectTabs':'reviewSubjectTabs';
+  document.querySelectorAll('#'+tabsId+' .review-subject-tab').forEach(btn=>{
+    btn.classList.toggle('active',btn.getAttribute('data-review-subj')===reviewSubjectKey(q));
   });
 }
 
@@ -6830,23 +6967,26 @@ async function showJambReviewFromHistory(attemptId){
 }
 
 function renderJambReviewList(breakdown,backFn){
-  const lbls=['A','B','C','D','E'];
-  let html='';
-  breakdown.forEach((q,i)=>{
-    const skip=q.userAns===undefined||q.userAns===null;
-    const correct=!skip&&q.userAns===q.ans;
-    const cls=skip?'ri-skipped':correct?'ri-correct':'ri-wrong';
-    const badge=skip?'<span class="ri-badge skipped">Skipped</span>':correct?'<span class="ri-badge correct">✓ Correct</span>':'<span class="ri-badge wrong">✗ Wrong</span>';
-    const meta=JAMB_SUBJECTS[q.subject]||{icon:'📚',name:q.subjLabel||q.subject};
-    let ah='';
-    if(!skip)ah+='<div class="ri-ans you">Your answer: '+lbls[q.userAns]+'. '+formatMathText(q.opts[q.userAns])+'</div>';
-    else ah+='<div class="ri-ans you">No answer selected</div>';
-    ah+='<div class="ri-ans correct-ans">✓ Correct: '+lbls[q.ans]+'. '+formatMathText(q.opts[q.ans])+'</div>';
-    if(q.explanation)ah+='<div style="margin-top:6px;font-size:0.78rem;color:var(--muted);">💡 '+formatMathText(q.explanation)+'</div>';
-    html+='<div class="review-item '+cls+'"><div class="ri-header"><span>'+meta.icon+' '+(q.subjLabel||meta.name)+' — Q'+(i+1)+'</span>'+badge+'</div><div class="ri-q">'+formatMathText(q.q)+'</div>'+ah+'</div>';
-  });
-  document.getElementById('jambReviewBody').innerHTML=html;
-  window._jambReviewBackFn=backFn;
+  const questions=breakdown.map((q,i)=>({...q,_reviewIndex:i}));
+  window._jambReviewState={questions,currentIndex:0,backFn};
+  buildReviewSubjectTabs('jambReviewSubjectTabs',questions,JAMB_SUBJECTS,'jamb');
+  renderInteractiveReviewQuestion('jambReviewBody','jambReviewQCounter','jambReviewProgressFill','jambReviewNextTop',questions,0,JAMB_SUBJECTS,'jamb');
+}
+
+function jambReviewNavigate(delta){
+  if(!window._jambReviewState)return;
+  const st=window._jambReviewState;
+  st.currentIndex=Math.max(0,Math.min(st.questions.length-1,st.currentIndex+delta));
+  renderInteractiveReviewQuestion('jambReviewBody','jambReviewQCounter','jambReviewProgressFill','jambReviewNextTop',st.questions,st.currentIndex,JAMB_SUBJECTS,'jamb');
+}
+
+function jambReviewJumpSubject(key){
+  if(!window._jambReviewState)return;
+  const st=window._jambReviewState;
+  const idx=st.questions.findIndex(q=>(q.subject||q.subjLabel||'mixed')===key);
+  if(idx<0)return;
+  st.currentIndex=idx;
+  renderInteractiveReviewQuestion('jambReviewBody','jambReviewQCounter','jambReviewProgressFill','jambReviewNextTop',st.questions,idx,JAMB_SUBJECTS,'jamb');
 }
 
 // ============================================================
