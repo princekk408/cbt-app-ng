@@ -3796,6 +3796,7 @@ function renderInteractiveReviewQuestion(bodyId,counterId,progressId,nextId,ques
     (skip?'○ Skipped':correct?'✓ Correct':'✗ Wrong')+'</div>';
   html+='<div class="q-number">QUESTION '+(index+1)+' OF '+questions.length+'</div>';
   html+='<div class="review-q-text">'+formatMathText(q.q)+'</div>';
+  if(q.image_url)html+='<div style="text-align:center;margin:12px 0 18px;"><img src="'+q.image_url+'" alt="Question diagram" style="max-width:100%;max-height:420px;width:auto;height:auto;display:block;margin:0 auto;border-radius:8px;"></div>';
   html+='<div class="review-options">';
   (q.opts||[]).forEach((opt,i)=>{
     const isCorrect=i===q.ans;
