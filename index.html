@@ -1028,7 +1028,7 @@ Ans: B"></textarea>
     <div id="jambPerSubjSettings"></div>
   </div>
   <div id="jambSubjectGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;width:100%;max-width:500px;margin-bottom:16px;"></div>
-  <button onclick="beginJAMBExam()" style="background:var(--gold);color:#fff;border:none;border-radius:25px;padding:14px 40px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;max-width:500px;">🚀 Start JAMB Exam</button>
+  <button id="jambStartBtn" onclick="beginJAMBExam()" style="background:var(--gold);color:#fff;border:none;border-radius:25px;padding:14px 40px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;max-width:500px;">🚀 Start JAMB Exam</button>
 </div>
 
 <!-- ===== JAMB QUIZ SCREEN (reuses quiz div with subject nav) ===== -->
@@ -6072,11 +6072,21 @@ async function getUnseenJambPool(subject,pool,needCount){
     const seenIds=new Set((data||[]).map(r=>r.question_id));
     const unseen=pool.filter(q=>q.id&&!seenIds.has(q.id));
     if(unseen.length>=needCount)return unseen; // plenty left, no repeats needed
-    // Not enough unseen questions to fill this session — the pool is
-    // exhausted (or close to it). Reset the cycle for this subject so
-    // future sessions start fresh, and allow the full pool for now.
-    await supa.from('jamb_seen_questions').delete().eq('user_id',currentUser.id).eq('subject',subject);
-    return pool;
+    if(unseen.length===0){
+      // Truly nothing new left anywhere in this filtered pool (subject +
+      // topics + years chosen) — reset the cycle so future sessions start
+      // fresh, and allow the full pool for now.
+      await supa.from('jamb_seen_questions').delete().eq('user_id',currentUser.id).eq('subject',subject);
+      return pool;
+    }
+    // Some unseen questions remain in this topic/year selection, just not
+    // enough on their own to fill the session. Use every unseen one first,
+    // and only top up the remaining slots with already-seen questions —
+    // never bump an unseen question in favour of a repeat, and never wipe
+    // the anti-repeat tracking just because a narrow topic filter is thin.
+    const gap=needCount-unseen.length;
+    const seenTopUp=pool.filter(q=>q.id&&seenIds.has(q.id)).sort(()=>Math.random()-0.5).slice(0,gap);
+    return [...unseen,...seenTopUp];
   }catch(e){console.log('Anti-repeat check error',e);return pool;}
 }
 async function markJambQuestionsSeen(subject,questions){
@@ -6200,6 +6210,7 @@ Object.entries(JAMB_SUBJECTS).forEach(([k,v])=>{
 // ============================================================
 let jambSessionType='practice'; // practice | mock | weekly
 let jambSelectedSubjects=[]; // 3 chosen (not english)
+let jambExamStarting=false; // guards against a double-tap on "Start" firing beginJAMBExam twice in parallel and corrupting the question set
 let jambAllQuestions=[]; // flat array per subject group: [{subj, qs:[]}]
 let jambSubjIndex=0; // which subject group we're on
 let jambAnswers={}; // {globalIdx: answerIdx}
@@ -6416,8 +6427,13 @@ function updateJambSetting(subj,field,value){
 }
 
 async function beginJAMBExam(){
+  if(jambExamStarting)return; // already building a session from a previous tap — ignore this one
   if(jambSelectedSubjects.length<3){alert('Please select exactly 3 subjects to continue.');return;}
   if(!JAMB_QB_LOADED){alert('Still loading the JAMB question bank, please wait a moment and try again.');return;}
+  jambExamStarting=true;
+  const startBtn=document.getElementById('jambStartBtn');
+  if(startBtn){startBtn.disabled=true;startBtn.style.opacity='0.6';}
+  try{
   jambEnded=false;jambAnswers={};jambFlagged=new Set();jambGlobalIndex=0;
 
   const type=jambSessionType;
@@ -6492,6 +6508,11 @@ async function beginJAMBExam(){
   renderJAMBQuestion(0);
   startJAMBTimer();
   if(jambSessionType==='weekly') startWeeklyWatchdog();
+  }finally{
+    jambExamStarting=false;
+    const btn=document.getElementById('jambStartBtn');
+    if(btn){btn.disabled=false;btn.style.opacity='1';}
+  }
 }
 
 function pickWithDifficulty(pool,count){
