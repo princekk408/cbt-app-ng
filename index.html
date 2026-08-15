@@ -871,8 +871,12 @@ Ans: B"></textarea>
 
 <!-- ===== JAMB PERFORMANCE TRACKER ===== -->
 <div id="jambPerformanceScreen" style="display:none;flex-direction:column;min-height:100vh;background:var(--dark);padding:20px;">
-  <button class="back-btn" style="align-self:flex-start;margin-bottom:16px;" onclick="showJAMBMode()">← Back</button>
-  <h2 style="color:var(--gold);margin-bottom:14px;">📈 My JAMB Performance</h2>
+  <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px;">
+    <button class="back-btn" onclick="showJAMBMode()">← Back</button>
+    <button id="jambSyncBtn" onclick="syncPendingJambAttempts(true)" style="background:var(--gold);color:#000;border:none;border-radius:20px;padding:9px 16px;font-size:.75rem;font-weight:800;cursor:pointer;">☁️ Sync Saved Attempts</button>
+  </div>
+  <h2 style="color:var(--gold);margin-bottom:6px;">📈 My JAMB Performance</h2>
+  <div id="jambSyncStatus" style="font-size:.72rem;color:var(--muted);margin-bottom:14px;"></div>
   <div id="jambPerfBody"><div style="color:var(--muted);text-align:center;padding:30px;">Loading your performance...</div></div>
 </div>
 
@@ -4562,6 +4566,9 @@ async function renderLeaderboard(tab){
       const entries=Object.values(best).sort((a,b)=>b.score-a.score);
       html='<div style="color:var(--gold);font-size:0.72rem;font-weight:700;text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">📝 JAMB All-Time Best Aggregate</div>'+buildTable(entries,' /400');
     }
+    else if(tab==='jambweekly' && new Date()<getSaturdayWindow().reveal){
+      html='<div style="text-align:center;padding:45px 20px;color:var(--muted);"><div style="font-size:2.5rem;margin-bottom:10px;">🔒</div><div style="color:var(--gold);font-weight:900;font-size:1rem;">JAMB Weekly results are locked</div><div style="margin-top:8px;font-size:.8rem;">The leaderboard and individual scores will appear together at exactly <b>1:00 PM</b>.</div></div>';
+    }
     else if(tab==='jambweekly'){
       const wk=getWeekKey();
       const {data}=await supa.from('weekly_challenges').select('user_name,total_score,percent,created_at').eq('challenge_week',wk).eq('challenge_type','jamb').order('total_score',{ascending:false}).limit(50);
@@ -6660,6 +6667,37 @@ function updateJAMBTimerDisplay(){
   el.className='timer'+(jambTimeLeft<=300?jambTimeLeft<=60?' danger':' warn':'');
 }
 
+// ============================================================
+// OFFLINE-FIRST JAMB ATTEMPT STORAGE
+// ============================================================
+function getPendingJambAttempts(){try{return JSON.parse(localStorage.getItem('rsu_jamb_pending_attempts')||'[]');}catch(e){return[];}}
+function savePendingJambAttempts(a){try{localStorage.setItem('rsu_jamb_pending_attempts',JSON.stringify((a||[]).slice(-20)));}catch(e){console.log('Local JAMB save error',e);}}
+function makeLocalAttemptId(){try{if(window.crypto&&crypto.randomUUID)return 'local_'+crypto.randomUUID();}catch(e){}return 'local_'+Date.now()+'_'+Math.random().toString(36).slice(2);}
+function saveJambAttemptLocally(payload){const row={...payload,local_id:payload.local_id||makeLocalAttemptId(),created_at:payload.created_at||new Date().toISOString(),sync_status:'pending'};const pending=getPendingJambAttempts();pending.push(row);savePendingJambAttempts(pending);return row;}
+function removePendingJambAttempt(localId){savePendingJambAttempts(getPendingJambAttempts().filter(a=>a.local_id!==localId));}
+function localJambAttemptToCloudPayload(a){const x={...a};delete x.local_id;delete x.sync_status;return x;}
+async function syncPendingJambAttempts(showMessage){
+ const status=document.getElementById('jambSyncStatus'),btn=document.getElementById('jambSyncBtn'),pending=getPendingJambAttempts();
+ if(!currentUser){if(status)status.textContent='Please sign in before synchronizing.';return {synced:0,failed:pending.length};}
+ if(!navigator.onLine){if(status)status.textContent='📴 Offline — saved attempts are safe on this device.';return {synced:0,failed:pending.length};}
+ if(btn)btn.disabled=true;if(status)status.textContent=pending.length?'☁️ Synchronizing '+pending.length+' saved attempt(s)...':'☁️ Checking saved attempts...';
+ let synced=0,failed=0;for(const a of pending){try{const {error}=await supa.from('jamb_attempts').insert([localJambAttemptToCloudPayload(a)]);if(error)throw error;removePendingJambAttempt(a.local_id);synced++;}catch(e){failed++;console.log('Pending JAMB sync failed:',e);}}
+ if(btn)btn.disabled=false;const left=getPendingJambAttempts().length;if(status)status.textContent=left?'⚠️ '+synced+' synced. '+left+' still waiting for connection.':'✅ All locally saved JAMB attempts are synchronized.';
+ if(showMessage&&synced>0)alert('✅ '+synced+' saved JAMB attempt(s) synchronized to the cloud.'+(left?'\
+'+left+' still waiting.':''));return {synced,failed};
+}
+window.addEventListener('online',()=>setTimeout(()=>syncPendingJambAttempts(false),1000));
+window.addEventListener('offline',()=>{const s=document.getElementById('jambSyncStatus');if(s)s.textContent='📴 Cloud offline — completed JAMB attempts will stay saved locally.';});
+function scheduleWeeklyReveal(){if(window._weeklyRevealTimer)clearTimeout(window._weeklyRevealTimer);const w=getSaturdayWindow();window._weeklyRevealTimer=setTimeout(()=>revealWeeklyResult(),Math.max(1000,w.reveal-Date.now()+300));}
+async function revealWeeklyResult(){
+ await syncPendingJambAttempts(false);const w=getSaturdayWindow();if(new Date()<w.reveal){scheduleWeeklyReveal();return;}let attempt=null;
+ if(currentUser&&navigator.onLine){try{const {data}=await supa.from('jamb_attempts').select('*').eq('user_id',currentUser.id).eq('session_type','weekly').gte('created_at',w.start.toISOString()).lte('created_at',new Date(w.reveal.getTime()+60*60*1000).toISOString()).order('created_at',{ascending:false}).limit(1);if(data&&data.length)attempt=data[0];}catch(e){}}
+ if(!attempt)attempt=getPendingJambAttempts().filter(a=>a.session_type==='weekly').sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];if(!attempt)return;
+ const qb=Array.isArray(attempt.question_breakdown)?attempt.question_breakdown:[];const makeResult=(label,score,subject)=>{const qs=qb.filter(q=>(q.subjLabel||q.subject)===label||q.subject===subject);return {subj:subject||labelToJambSubjectKey(label)||label,label,correct:qs.filter(q=>q.userAns===q.ans).length,total:qs.length,pct:score||0,score100:score||0};};
+ const results=[makeResult(attempt.english_label||'English',attempt.english_score,'english')];[2,3,4].forEach(n=>{const label=attempt['subject'+n+'_label'];if(label)results.push(makeResult(label,attempt['subject'+n+'_score'],labelToJambSubjectKey(label)||label));});
+ hideAll();document.getElementById('jambResultsScreen').style.display='flex';setThemeToggleVisible(true);renderJAMBResults(results,attempt.aggregate_400||0,false);
+}
+
 async function finishJAMBExam(timedOut,antiCheat){
   if(jambEnded)return;
   clearInterval(jambTimer);
@@ -6698,32 +6736,14 @@ async function finishJAMBExam(timedOut,antiCheat){
   // later from history (Mock/Weekly, where the score-only rule applies).
   const questionBreakdown=jambAllQuestions.map((q,i)=>({
     q:q.q,opts:q.opts,ans:q.ans,explanation:q.explanation||'',
-    subject:q.subject,subjLabel:q.subjLabel,userAns:jambAnswers[i]
+    subject:q.subject,subjLabel:q.subjLabel,topic:q.topic||null,difficulty:q.difficulty||null,userAns:jambAnswers[i]
   }));
 
-  // Save to cloud
+  // OFFLINE-FIRST: save the complete attempt locally BEFORE any network request.
   if(currentUser){
-    try{
-      await supa.from('jamb_attempts').insert([{
-        user_id:currentUser.id,
-        user_name:currentUser.name,
-        user_email:currentUser.email,
-        subjects_chosen:jambSelectedSubjects,
-        english_score:results[0]?.score100||0,
-        subject2_score:results[1]?.score100||0,
-        subject3_score:results[2]?.score100||0,
-        subject4_score:results[3]?.score100||0,
-        english_label:results[0]?.label||'English',
-        subject2_label:results[1]?.label||'',
-        subject3_label:results[2]?.label||'',
-        subject4_label:results[3]?.label||'',
-        total_score:totalPct,
-        aggregate_400:aggregate,
-        session_type:jambSessionType,
-        flagged_cheating:!!antiCheat,
-        question_breakdown:questionBreakdown
-      }]);
-    }catch(e){console.log('JAMB cloud save error',e);}
+    const attemptPayload={user_id:currentUser.id,user_name:currentUser.name,user_email:currentUser.email,subjects_chosen:jambSelectedSubjects,english_score:results[0]?.score100||0,subject2_score:results[1]?.score100||0,subject3_score:results[2]?.score100||0,subject4_score:results[3]?.score100||0,english_label:results[0]?.label||'English',subject2_label:results[1]?.label||'',subject3_label:results[2]?.label||'',subject4_label:results[3]?.label||'',total_score:totalPct,aggregate_400:aggregate,session_type:jambSessionType,flagged_cheating:!!antiCheat,question_breakdown:questionBreakdown,created_at:new Date().toISOString()};
+    const localAttempt=saveJambAttemptLocally(attemptPayload);
+    try{const {error}=await supa.from('jamb_attempts').insert([localJambAttemptToCloudPayload(localAttempt)]);if(error)throw error;removePendingJambAttempt(localAttempt.local_id);}catch(e){console.log('JAMB cloud save deferred; local copy retained:',e);}
 
     // Save to mock_scores for daily/weekly mock leaderboard
     if(jambSessionType==='mock'||jambSessionType==='weekly'){
@@ -6769,7 +6789,8 @@ async function finishJAMBExam(timedOut,antiCheat){
       document.getElementById('jambWeeklyPendingScreen').style.display='flex';
       setThemeToggleVisible(true);
       const msg=document.getElementById('weeklyPendingMsg');
-      if(msg)msg.textContent='Your submission has been recorded. Results and the leaderboard will be revealed together at 1:00 PM today.';
+      if(msg)msg.textContent='Your submission has been securely saved on this device. Results and the leaderboard will be revealed together at exactly 1:00 PM today.';
+      scheduleWeeklyReveal();
       return;
     }
   }
@@ -6815,13 +6836,15 @@ async function showJambPerformance(){
   body.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">Loading your performance...</div>';
   if(!currentUser){body.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">Please log in to see your performance.</div>';return;}
 
+  await syncPendingJambAttempts(false);
   let attempts=[];
   try{
-    const {data,error}=await supa.from('jamb_attempts')
-      .select('*').eq('user_id',currentUser.id)
-      .order('created_at',{ascending:true});
+    const {data,error}=await supa.from('jamb_attempts').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:true});
     if(!error&&data) attempts=data;
   }catch(e){console.log('JAMB performance load error',e);}
+  const cloudIds=new Set(attempts.map(a=>a.id));
+  getPendingJambAttempts().filter(a=>a.user_id===currentUser.id).forEach(a=>{if(!cloudIds.has(a.id))attempts.push(a);});
+  attempts.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
 
   if(!attempts.length){
     body.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);">'
@@ -6891,13 +6914,17 @@ async function showJambPerformance(){
   // ---- History list ----
   html+='<div style="color:var(--gold);font-weight:700;font-size:0.85rem;margin-bottom:8px;">Session History</div>';
   [...attempts].reverse().forEach(a=>{
-    const date=a.created_at?new Date(a.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+    const date=a.created_at?new Date(a.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
     const typeLabel=a.session_type==='mock'?'🎯 Mock Exam':a.session_type==='weekly'?'⚡ Weekly Challenge':'📖 Practice';
-    html+='<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
-      +'<div><div style="font-size:0.82rem;font-weight:700;color:var(--text);">'+typeLabel+'</div><div style="font-size:0.7rem;color:var(--muted);">'+date+'</div></div>'
+    const localOnly=!!a.local_id,qbs=Array.isArray(a.question_breakdown)?a.question_breakdown:[],sm={};
+    qbs.forEach(q=>{const k=q.subject||q.subjLabel||'mixed';if(!sm[k])sm[k]={label:q.subjLabel||k,c:0,t:0};sm[k].t++;if(q.userAns!==undefined&&q.userAns!==null&&q.userAns===q.ans)sm[k].c++;});
+    const stats=Object.values(sm).map(s=>s.label+': '+s.c+'/'+s.t+' passed').join(' · '),rid=a.local_id?'local:'+a.local_id:a.id;
+    html+='<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'
+      +'<div><div style="font-size:0.82rem;font-weight:700;color:var(--text);">'+typeLabel+(localOnly?' <span style="color:var(--warn);font-size:.65rem;">📴 Saved locally</span>':'')+'</div><div style="font-size:0.7rem;color:var(--muted);">'+date+'</div></div>'
       +'<div style="font-size:1.1rem;font-weight:700;color:var(--gold);">'+(a.aggregate_400||0)+'<span style="font-size:0.65rem;color:var(--muted);">/400</span></div>'
-      +'<button onclick="showJambReviewFromHistory(\''+a.id+'\')" style="background:var(--accent);border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:6px 10px;font-size:0.68rem;font-weight:700;cursor:pointer;margin-left:8px;white-space:nowrap;">📝 Review</button>'
-    +'</div>';
+      +'<button onclick="showJambReviewFromHistory(\''+rid+'\')" style="background:var(--accent);border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:6px 10px;font-size:0.68rem;font-weight:700;cursor:pointer;margin-left:8px;white-space:nowrap;">📝 Review</button>'
+      +'</div>'+(stats?'<div style="font-size:.68rem;color:var(--muted);margin-top:8px;line-height:1.5;">'+stats+'</div>':'')+'</div>';
   });
 
   body.innerHTML=html;
@@ -6972,20 +6999,14 @@ function showJambReview(){
 // Review from history (Mock/Weekly, or revisiting an old Practice session)
 // — pulls the saved breakdown from a jamb_attempts row instead of memory.
 async function showJambReviewFromHistory(attemptId){
-  hideAll();
-  document.getElementById('jambReviewScreen').style.display='flex';
-  setThemeToggleVisible(true);
+  hideAll();document.getElementById('jambReviewScreen').style.display='flex';setThemeToggleVisible(true);
   document.getElementById('jambReviewBody').innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">Loading your answers...</div>';
   try{
-    const {data,error}=await supa.from('jamb_attempts').select('question_breakdown').eq('id',attemptId).single();
-    if(error||!data||!data.question_breakdown||!data.question_breakdown.length){
-      document.getElementById('jambReviewBody').innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">No saved answer detail found for this session (it may predate this feature).</div>';
-      return;
-    }
-    renderJambReviewList(data.question_breakdown,()=>showJambPerformance());
-  }catch(e){
-    document.getElementById('jambReviewBody').innerHTML='<div style="color:var(--wrong);text-align:center;padding:30px;">Could not load review.</div>';
-  }
+    let attempt=null;if(String(attemptId).startsWith('local:'))attempt=getPendingJambAttempts().find(a=>a.local_id===String(attemptId).slice(6))||null;
+    else{const {data,error}=await supa.from('jamb_attempts').select('*').eq('id',attemptId).single();if(!error)attempt=data;}
+    if(!attempt||!Array.isArray(attempt.question_breakdown)||!attempt.question_breakdown.length){document.getElementById('jambReviewBody').innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">No saved answer detail found for this session.</div>';return;}
+    renderJambReviewList(attempt.question_breakdown,()=>showJambPerformance());
+  }catch(e){document.getElementById('jambReviewBody').innerHTML='<div style="color:var(--wrong);text-align:center;padding:30px;">Could not load review.</div>';}
 }
 
 function renderJambReviewList(breakdown,backFn){
@@ -9720,6 +9741,18 @@ function onLoginSuccess(){
 // Mark offline when page closes
 window.addEventListener('beforeunload',()=>markUserOffline());
 
+</script>
+\n<script>
+(function(){
+  const oldResults=window.renderJAMBResults;
+  if(oldResults)window.renderJAMBResults=function(results,aggregate,timedOut){
+    oldResults(results,aggregate,timedOut);
+    try{const body=document.getElementById('jambResultsBody');if(!body)return;const q=jambAllQuestions||[],s={},t={};
+      q.forEach((x,i)=>{const k=x.subjLabel||x.subject||'Mixed';if(!s[k])s[k]={label:k,c:0,n:0};s[k].n++;if(jambAnswers[i]===x.ans)s[k].c++;const tk=k+'||'+(x.topic||'Unspecified topic');if(!t[tk])t[tk]={s:k,t:x.topic||'Unspecified topic',c:0,n:0};t[tk].n++;if(jambAnswers[i]===x.ans)t[tk].c++;});
+      let h='<div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;text-align:left;"><div style="color:var(--gold);font-weight:800;font-size:.82rem;margin-bottom:8px;">📊 PASSED / FAILED BY SUBJECT</div>';Object.values(s).forEach(v=>h+='<div style="display:flex;justify-content:space-between;font-size:.72rem;padding:6px 0;border-bottom:1px solid var(--line);"><b>'+v.label+'</b><span style="color:var(--correct);font-weight:800;">Passed '+v.c+'</span><span style="color:var(--wrong);font-weight:800;">Failed '+(v.n-v.c)+'</span><span style="color:var(--muted);">/'+v.n+'</span></div>');
+      h+='<details style="margin-top:10px;"><summary style="cursor:pointer;color:var(--gold);font-weight:800;font-size:.76rem;">📚 Topic breakdown — all subjects</summary><div style="margin-top:8px;">';Object.values(t).forEach(v=>h+='<div style="font-size:.68rem;padding:5px 0;color:var(--muted);">'+v.s+' · '+v.t+' — <b style="color:var(--text);">'+v.c+'/'+v.n+' correct</b></div>');h+='</div></details></div>';body.insertAdjacentHTML('afterbegin',h);}catch(e){console.log('analytics',e);}};
+  const oldReview=window.renderInteractiveReviewQuestion;if(oldReview)window.renderInteractiveReviewQuestion=function(bodyId,counterId,progressId,nextId,questions,index,metaMap,mode){oldReview(bodyId,counterId,progressId,nextId,questions,index,metaMap,mode);if(mode!=='jamb')return;try{const body=document.getElementById(bodyId);const q=questions||[],s={},t={};q.forEach(x=>{const k=x.subjLabel||x.subject||'Mixed';if(!s[k])s[k]={c:0,n:0};s[k].n++;if(x.userAns!==undefined&&x.userAns!==null&&x.userAns===x.ans)s[k].c++;const tk=k+'||'+(x.topic||'Unspecified topic');if(!t[tk])t[tk]={s:k,t:x.topic||'Unspecified topic',c:0,n:0};t[tk].n++;if(x.userAns!==undefined&&x.userAns!==null&&x.userAns===x.ans)t[tk].c++;});let h='<details style="background:var(--accent);border:1px solid var(--line);border-radius:10px;padding:9px;margin-bottom:14px;"><summary style="cursor:pointer;color:var(--gold);font-weight:800;font-size:.75rem;">📊 Subject score + passed/failed + topics</summary><div style="margin-top:8px;">';Object.entries(s).forEach(([k,v])=>h+='<div style="font-size:.7rem;padding:5px 0;border-bottom:1px solid var(--line);"><b>'+k+'</b>: '+v.c+'/'+v.n+' correct · <span style="color:var(--wrong);">Failed '+(v.n-v.c)+'</span></div>');Object.values(t).forEach(v=>h+='<div style="font-size:.66rem;padding:4px 0;color:var(--muted);">'+v.s+' · '+v.t+' — <b style="color:var(--text);">'+v.c+'/'+v.n+' correct</b></div>');h+='</div></details>';body.insertAdjacentHTML('afterbegin',h);}catch(e){}};
+})();
 </script>
 </body>
 </html>
