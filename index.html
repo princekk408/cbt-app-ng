@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RSU & JAMB CBT Practice App</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0f766e">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   /* Professional palette: default is a clean light/white theme with a single
@@ -543,6 +547,12 @@
     <div class="stat-box"><div class="num" id="splashBest">-</div><div class="lbl">Best Score</div></div>
   </div>
 
+  <div style="width:100%;max-width:500px;display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button id="globalSyncBtn" onclick="syncAllPendingData(true)" style="flex:1;min-width:150px;background:var(--card);border:1.5px solid var(--gold);color:var(--gold);border-radius:20px;padding:9px 12px;font-size:.72rem;font-weight:800;cursor:pointer;">☁️ Sync Saved Attempts</button>
+    <a href="https://chat.whatsapp.com/BsYxiAMail6AMTXRxnrJsR?s=cl&p=a&ilr=4" target="_blank" rel="noopener" style="flex:1;min-width:150px;text-decoration:none;background:#25D366;color:#04220f;border-radius:20px;padding:9px 12px;font-size:.72rem;font-weight:800;text-align:center;">💬 Join WhatsApp Group</a>
+  </div>
+  <div id="globalSyncStatus" style="font-size:.68rem;color:var(--muted);margin:-8px 0 14px;text-align:center;width:100%;max-width:500px;"></div>
+
   <div id="upgradeBanner" style="display:none;width:100%;max-width:500px;background:rgba(15,118,110,0.1);border:1.5px solid var(--gold);border-radius:12px;padding:12px 14px;margin-bottom:16px;cursor:pointer;" onclick="showPaymentScreen()">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="font-size:1.4rem;">🔓</div>
@@ -648,6 +658,7 @@
       <button class="icon-circle-btn" id="flagBtn" onclick="toggleFlag()" title="Flag this question">🔖</button>
       <button class="icon-circle-btn" onclick="toggleCalc()" title="Scientific Calculator">🧮</button>
       <button class="icon-circle-btn" id="mapToggleBtn" onclick="toggleMap()" title="Question Map">▤</button>
+      <button class="icon-circle-btn" onclick="saveProgressNow()" title="Save progress to this device now">💾</button>
       <div class="spacer"></div>
       <div class="timer" id="timerDisplay">30:00</div>
     </div>
@@ -711,6 +722,7 @@
       <div style="font-size:.72rem;font-weight:700;color:var(--muted);">ANSWER REVIEW</div>
     </div>
     <div class="review-subject-tabs" id="reviewSubjectTabs"></div>
+    <div id="reviewSummary" style="padding:6px 14px 0;"></div>
     <div class="review-progress-row">
       <span class="review-q-counter" id="reviewQCounter">Q 1 / 50</span>
       <button class="review-chev" id="reviewNextTop" onclick="reviewNavigate(1)" title="Next question">›</button>
@@ -899,6 +911,7 @@ Ans: B"></textarea>
       <div style="font-size:.72rem;font-weight:700;color:var(--muted);">ANSWER REVIEW</div>
     </div>
     <div class="review-subject-tabs" id="jambReviewSubjectTabs"></div>
+    <div id="jambReviewSummary" style="padding:6px 14px 0;"></div>
     <div class="review-progress-row">
       <span class="review-q-counter" id="jambReviewQCounter">Q 1 / 40</span>
       <button class="review-chev" id="jambReviewNextTop" onclick="jambReviewNavigate(1)" title="Next question">›</button>
@@ -1041,6 +1054,7 @@ Ans: B"></textarea>
     <div class="quiz-icons-row">
       <button class="icon-circle-btn" onclick="jambToggleFlag()" title="Flag this question">🔖</button>
       <button class="icon-circle-btn" onclick="toggleCalc()" title="Scientific Calculator">🧮</button>
+      <button class="icon-circle-btn" onclick="saveProgressNow()" title="Save progress to this device now">💾</button>
       <div class="spacer"></div>
       <button class="jamb-top-submit" id="jambTopSubmitBtn" onclick="confirmJAMBSubmit()" title="Submit JAMB Exam">Submit</button>
       <div class="timer" id="jambTimer">30:00</div>
@@ -3281,6 +3295,83 @@ function dismissAntiCheat(){document.getElementById('antiCheatOverlay').classLis
 let currentSession=[],currentIndex=0,answers={},flagged=new Set();
 let timerInterval,timeLeft=1800,sessionSubject='mixed',quizEnded=false;
 
+// ============================================================
+// IN-PROGRESS SESSION AUTOSAVE (works fully offline)
+// Every answer selection — and a manual "Save Progress" button —
+// writes the current session to localStorage, so a closed tab,
+// dead battery, or lost connection mid-exam doesn't lose answers.
+// The next time the app opens (even with no network), it offers
+// to resume exactly where the student left off.
+// ============================================================
+let _autosaveTimer=null;
+function autosaveSessionProgress(){
+  clearTimeout(_autosaveTimer);
+  _autosaveTimer=setTimeout(()=>{
+    try{
+      if(isQuizActive&&activeExamType==='jamb'&&jambAllQuestions&&jambAllQuestions.length){
+        localStorage.setItem('rsu_jamb_inprogress',JSON.stringify({
+          jambAllQuestions,jambAnswers,jambSubjBoundaries,jambSelectedSubjects,
+          jambSessionType,jambTimeLeft,jambSubjIndex,jambGlobalIndex,
+          savedAt:new Date().toISOString()
+        }));
+      }else if(isQuizActive&&currentSession&&currentSession.length){
+        localStorage.setItem('rsu_general_inprogress',JSON.stringify({
+          currentSession,answers,sessionSubject,timeLeft,currentIndex,
+          savedAt:new Date().toISOString()
+        }));
+      }
+    }catch(e){console.log('Autosave failed (storage full?)',e);}
+  },250);
+}
+function saveProgressNow(){
+  autosaveSessionProgress();
+  setTimeout(()=>showToast?showToast('💾 Progress saved on this device',2000):alert('💾 Progress saved on this device.'),300);
+}
+function clearInProgressSession(){
+  try{localStorage.removeItem('rsu_jamb_inprogress');localStorage.removeItem('rsu_general_inprogress');}catch(e){}
+}
+function getInProgressSession(){
+  try{
+    const j=localStorage.getItem('rsu_jamb_inprogress');if(j)return {type:'jamb',data:JSON.parse(j)};
+    const g=localStorage.getItem('rsu_general_inprogress');if(g)return {type:'general',data:JSON.parse(g)};
+  }catch(e){}
+  return null;
+}
+function offerToResumeSession(){
+  const saved=getInProgressSession();
+  if(!saved)return;
+  const savedAt=new Date(saved.data.savedAt);
+  const mins=Math.max(0,Math.round((Date.now()-savedAt.getTime())/60000));
+  if(!confirm('You have an unfinished '+(saved.type==='jamb'?'JAMB '+(saved.data.jambSessionType||'')+' ':'')+'session saved on this device from '+(mins<1?'moments ago':mins+' minute(s) ago')+'. Resume it?\n\n(Tap Cancel to discard it and start fresh.)')){
+    clearInProgressSession();
+    return;
+  }
+  resumeInProgressSession(saved);
+}
+function resumeInProgressSession(saved){
+  hideAll();
+  if(saved.type==='jamb'){
+    const d=saved.data;
+    jambAllQuestions=d.jambAllQuestions;jambAnswers=d.jambAnswers||{};jambSubjBoundaries=d.jambSubjBoundaries;
+    jambSelectedSubjects=d.jambSelectedSubjects;jambSessionType=d.jambSessionType;jambTimeLeft=d.jambTimeLeft;
+    jambSubjIndex=d.jambSubjIndex||0;jambGlobalIndex=d.jambGlobalIndex||0;jambEnded=false;isQuizActive=true;activeExamType='jamb';
+    document.getElementById('jambQuizScreen').style.display='flex';
+    setThemeToggleVisible(true);
+    renderJAMBQuestion(jambGlobalIndex);
+    startJAMBTimer();
+    if(jambSessionType==='weekly')startWeeklyWatchdog();
+  }else{
+    const d=saved.data;
+    currentSession=d.currentSession;answers=d.answers||{};sessionSubject=d.sessionSubject;timeLeft=d.timeLeft;
+    currentIndex=d.currentIndex||0;quizEnded=false;isQuizActive=true;
+    document.getElementById('quiz').style.display='flex';
+    setThemeToggleVisible(true);
+    renderQuestion();
+    startTimer();
+  }
+}
+window.addEventListener('load',()=>setTimeout(offerToResumeSession,1200));
+
 // ===== STORAGE =====
 function getUsed(){try{return JSON.parse(localStorage.getItem('rsu_used_v4')||'{}');}catch(e){return{};}}
 function saveUsed(o){try{localStorage.setItem('rsu_used_v4',JSON.stringify(o));}catch(e){}}
@@ -3610,6 +3701,7 @@ function selectAnswer(i){
   // Allow changing answer before submission — this is a CBT, not auto-submit
   answers[currentIndex]=i;
   renderQuestion();
+  autosaveSessionProgress();
 }
 
 function navigate(d){
@@ -3646,6 +3738,7 @@ function confirmSubmit(){
 }
 function _endQuizCoreBase(timeout,antiCheat){
   if(quizEnded)return; quizEnded=true; isQuizActive=false;
+  clearInProgressSession();
   clearInterval(timerInterval);
   if(typeof acTimer!=='undefined'&&acTimer){clearInterval(acTimer);acTimer=null;}
   const el=document.getElementById('antiCheatOverlay');
@@ -3671,7 +3764,7 @@ function _endQuizCoreBase(timeout,antiCheat){
     percent:pct,correct,total,date:new Date().toISOString(),subject:sessionSubject,timeStr:ts,
     questions:currentSession.map((q,i)=>({
       q:q.q,opts:q.opts,ans:q.ans,explanation:q.explanation||'',
-      subject:q._subj||q.subject||'mixed',userAns:answers[i]
+      subject:q._subj||q.subject||'mixed',topic:q.topic||null,userAns:answers[i]
     }))
   };
   h.unshift(attemptRecord);
@@ -3684,6 +3777,7 @@ function _endQuizCoreBase(timeout,antiCheat){
     if(q._idx!==undefined&&!used[s].includes(q._idx))used[s].push(q._idx);
   });
   saveUsed(used);
+  window._lastAttemptQuestions=attemptRecord.questions;
   renderResults({correct,wrong,skipped,total,pct,acc,ts,bySub,timeout,antiCheat});
   showResults();
 }
@@ -3738,15 +3832,21 @@ function renderResults({correct,wrong,skipped,total,pct,acc,ts,bySub,timeout,ant
     const m=subjectMeta[s]||{icon:'📚',name:s};
     const p=d.total>0?Math.round(d.correct/d.total*100):0;
     const fc=p>=60?'#28a745':p>=40?'#ffc107':'#dc3545';
-    bd.innerHTML+='<div class="breakdown-item"><div class="bi-label"><span>'+m.icon+' '+m.name+'</span><span>'+d.correct+'/'+d.total+' ('+p+'%)</span></div><div class="bi-bar"><div class="bi-fill" style="width:'+p+'%;background:'+fc+'"></div></div></div>';
+    bd.innerHTML+='<div class="breakdown-item"><div class="bi-label"><span>'+m.icon+' '+m.name+'</span><span style="color:#28a745;">✔ '+d.correct+'</span> <span style="color:#dc3545;">✘ '+(d.total-d.correct)+'</span> <span>('+p+'%)</span></div><div class="bi-bar"><div class="bi-fill" style="width:'+p+'%;background:'+fc+'"></div></div></div>';
   });
+  // Topic-level breakdown, per subject, for this attempt
+  if(window._lastAttemptQuestions&&window._lastAttemptQuestions.length){
+    bd.innerHTML+='<h3 style="margin-top:14px;">🏷️ Topic Breakdown (tap a subject)</h3>'
+      +renderBreakdownBarHTML(computeSubjectTopicBreakdown(window._lastAttemptQuestions,subjectMeta,'generic'),'resTopic');
+  }
 }
 
 // ===== REVIEW — ANSWERS SHOWN AFTER SUBMISSION ONLY =====
 function renderReview(){
-  const questions=currentSession.map((q,i)=>({...q,_reviewIndex:i}));
+  const questions=currentSession.map((q,i)=>({...q,_reviewIndex:i,userAns:answers[i]}));
   window._reviewState={questions,currentIndex:0,backFn:showResults,mode:'generic'};
   buildReviewSubjectTabs('reviewSubjectTabs',questions,subjectMeta,'generic');
+  renderReviewSummaryBar('reviewSummary',questions,subjectMeta,'generic');
   renderInteractiveReviewQuestion('reviewBody','reviewQCounter','reviewProgressFill','reviewNextTop',questions,0,subjectMeta,'generic');
 }
 
@@ -3766,6 +3866,57 @@ function buildReviewSubjectTabs(tabId,questions,metaMap,mode){
 
 function reviewSubjectKey(q){
   return q._subj||q.subject||'mixed';
+}
+
+// ============================================================
+// SHARED: PASS/FAIL + TOPIC BREAKDOWN (used by results & review
+// screens, for both General Practice and JAMB sessions)
+// ============================================================
+function computeSubjectTopicBreakdown(questions,metaMap,mode){
+  const bySub={};
+  questions.forEach(q=>{
+    const key=mode==='jamb'?(q.subject||q.subjLabel||'mixed'):(q._subj||q.subject||'mixed');
+    if(!bySub[key])bySub[key]={correct:0,total:0,topics:{}};
+    const s=bySub[key];
+    s.total++;
+    const got=q.userAns!==undefined&&q.userAns===q.ans;
+    if(got)s.correct++;
+    const topic=(q.topic&&String(q.topic).trim())||'General / Untagged';
+    if(!s.topics[topic])s.topics[topic]={correct:0,total:0};
+    s.topics[topic].total++;
+    if(got)s.topics[topic].correct++;
+  });
+  return Object.entries(bySub).map(([key,d])=>{
+    const m=metaMap[key]||{icon:'📚',name:key};
+    return {key,name:m.name||key,icon:m.icon||'📚',correct:d.correct,total:d.total,failed:d.total-d.correct,topics:d.topics};
+  });
+}
+
+function renderBreakdownBarHTML(breakdown,idPrefix){
+  return breakdown.map((s,idx)=>{
+    const pct=s.total?Math.round(s.correct/s.total*100):0;
+    const fc=pct>=60?'#28a745':pct>=40?'#ffc107':'#dc3545';
+    const uid=idPrefix+'_'+idx;
+    const topicRows=Object.entries(s.topics).sort((a,b)=>b[1].total-a[1].total).map(([t,td])=>{
+      const tp=td.total?Math.round(td.correct/td.total*100):0;
+      const tc=tp>=60?'#28a745':tp>=40?'#ffc107':'#dc3545';
+      return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:.7rem;color:var(--text);padding:4px 0;border-bottom:1px dashed #333;"><span style="flex:1;">'+t+'</span><span style="color:'+tc+';font-weight:700;white-space:nowrap;">'+td.correct+'/'+td.total+' ('+tp+'%)</span></div>';
+    }).join('');
+    return '<div style="background:var(--card);border:1px solid #333;border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;gap:8px;" onclick="var t=document.getElementById(\''+uid+'\');if(t)t.style.display=t.style.display===\'block\'?\'none\':\'block\';">'
+        +'<span style="font-size:.78rem;font-weight:700;">'+s.icon+' '+s.name+'</span>'
+        +'<span style="font-size:.68rem;white-space:nowrap;"><span style="color:#28a745;">✔ '+s.correct+' passed</span> &nbsp;<span style="color:#dc3545;">✘ '+s.failed+' failed</span> &nbsp;<span style="color:'+fc+';font-weight:800;">'+pct+'%</span> <span style="color:var(--muted);">▾ topics</span></span>'
+      +'</div>'
+      +'<div id="'+uid+'" style="display:none;margin-top:6px;">'+(topicRows||'<div style="font-size:.68rem;color:var(--muted);padding:4px 0;">No topic tags recorded for these questions.</div>')+'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function renderReviewSummaryBar(containerId,questions,metaMap,mode){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  const breakdown=computeSubjectTopicBreakdown(questions,metaMap,mode);
+  el.innerHTML=renderBreakdownBarHTML(breakdown,containerId+'_t');
 }
 
 function reviewNavigate(delta){
@@ -5779,6 +5930,33 @@ const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 // ============================================================
+// SERVER CLOCK SYNC — the Weekly Challenge reveal must fire at a
+// real, shared 1:00 PM, not "whatever time the phone's clock says".
+// A wrong device clock/timezone previously caused the leaderboard
+// and score to reveal early or late for some users. We measure the
+// offset between the device clock and the Supabase server's clock
+// (from its HTTP Date header) and use that corrected time for all
+// Weekly Challenge window/reveal calculations.
+// ============================================================
+let _clockOffsetMs=0;
+async function syncServerClock(){
+  try{
+    const t0=Date.now();
+    const res=await fetch(SUPA_URL+'/rest/v1/',{method:'HEAD',headers:{apikey:SUPA_KEY}});
+    const dateHeader=res.headers.get('date');
+    if(dateHeader){
+      const serverMs=new Date(dateHeader).getTime();
+      const rtt=Date.now()-t0;
+      _clockOffsetMs=(serverMs+Math.round(rtt/2))-Date.now();
+    }
+  }catch(e){/* offline or blocked — fall back to device clock (offset 0) */}
+}
+function serverNow(){return new Date(Date.now()+_clockOffsetMs);}
+syncServerClock();
+window.addEventListener('online',syncServerClock);
+setInterval(syncServerClock,10*60*1000);
+
+// ============================================================
 // RANK SYSTEM — defined early so all functions can use it
 // ============================================================
 const RANKS=[
@@ -6236,7 +6414,7 @@ let jambSubjectSettings={}; // { subj: {count, time, topics:[], years:[]} }
 // Leaderboard + individual results reveal together at 1:00 PM.
 // ============================================================
 function getSaturdayWindow(){
-  const now=new Date();
+  const now=serverNow();
   const day=now.getDay(); // 0=Sun...6=Sat
   const diffToSat=(6-day+7)%7;
   const sat=new Date(now);
@@ -6250,7 +6428,7 @@ function getSaturdayWindow(){
 }
 function isWeeklyStartWindowOpen(){
   const w=getSaturdayWindow();
-  const now=new Date();
+  const now=serverNow();
   return now>=w.start&&now<=w.closeNew;
 }
 function formatWeeklyWindowMsg(){
@@ -6265,7 +6443,7 @@ function startWeeklyWatchdog(){
   weeklyWatchdogTimer=setInterval(()=>{
     if(jambSessionType!=='weekly'||jambEnded){clearInterval(weeklyWatchdogTimer);return;}
     const w=getSaturdayWindow();
-    if(new Date()>=w.graceEnd){
+    if(serverNow()>=w.graceEnd){
       clearInterval(weeklyWatchdogTimer);
       finishJAMBExam(true); // scheduled cutoff, not a cheating flag
     }
@@ -6627,6 +6805,7 @@ function renderJAMBQuestion(idx){
 function selectJAMBAnswer(optIdx){
   jambAnswers[jambGlobalIndex]=optIdx;
   renderJAMBQuestion(jambGlobalIndex);
+  autosaveSessionProgress();
 }
 
 function jambNavigate(dir){
@@ -6686,16 +6865,47 @@ async function syncPendingJambAttempts(showMessage){
  if(showMessage&&synced>0)alert('✅ '+synced+' saved JAMB attempt(s) synchronized to the cloud.'+(left?'\
 '+left+' still waiting.':''));return {synced,failed};
 }
+// Global "Sync Saved Attempts" button on the home screen — runs BOTH
+// offline queues (JAMB attempts saved to localStorage, and the general
+// pendingSync queue saved to IndexedDB) in one tap, so the user doesn't
+// need to know which system a given attempt landed in.
+async function syncAllPendingData(showMessage){
+  const status=document.getElementById('globalSyncStatus'),btn=document.getElementById('globalSyncBtn');
+  const jambPendingCount=getPendingJambAttempts().length;
+  let idbPendingCount=0;try{idbPendingCount=((await idbGet('pendingSync'))||[]).length;}catch(e){}
+  const totalPending=jambPendingCount+idbPendingCount;
+  if(!navigator.onLine){
+    if(status)status.textContent=totalPending?'📴 Offline — '+totalPending+' saved attempt(s) are safe on this device and will sync once you have data.':'📴 Offline';
+    if(showMessage)alert('You are offline. '+(totalPending?totalPending+' saved attempt(s) will sync automatically once you\'re back online.':'No saved attempts are waiting right now.'));
+    return;
+  }
+  if(!totalPending){
+    if(status)status.textContent='✅ Nothing waiting — everything is synchronized.';
+    if(showMessage)alert('✅ Nothing to sync — all your attempts are already saved to the cloud.');
+    return;
+  }
+  if(btn)btn.disabled=true;
+  if(status)status.textContent='☁️ Synchronizing '+totalPending+' saved attempt(s)...';
+  const jr=await syncPendingJambAttempts(false);
+  await flushPendingSync();
+  const left=getPendingJambAttempts().length+(((await idbGet('pendingSync'))||[]).length);
+  if(btn)btn.disabled=false;
+  if(status)status.textContent=left?'⚠️ Synced what we could. '+left+' still waiting for a stronger connection.':'✅ All saved attempts are now synchronized to the cloud.';
+  if(showMessage)alert(left?'⚠️ '+left+' attempt(s) still waiting — try again once your connection is stronger.':'✅ All your saved attempts (including any earlier ones) are now synced. Check My Performance / Leaderboard to see them.');
+  refreshSplashStats&&refreshSplashStats();
+}
+window.addEventListener('load',()=>setTimeout(()=>syncAllPendingData(false),1500));
+window.addEventListener('online',()=>setTimeout(()=>syncAllPendingData(false),1000));
 window.addEventListener('online',()=>setTimeout(()=>syncPendingJambAttempts(false),1000));
 window.addEventListener('offline',()=>{const s=document.getElementById('jambSyncStatus');if(s)s.textContent='📴 Cloud offline — completed JAMB attempts will stay saved locally.';});
-function scheduleWeeklyReveal(){if(window._weeklyRevealTimer)clearTimeout(window._weeklyRevealTimer);const w=getSaturdayWindow();window._weeklyRevealTimer=setTimeout(()=>revealWeeklyResult(),Math.max(1000,w.reveal-Date.now()+300));}
+function scheduleWeeklyReveal(){if(window._weeklyRevealTimer)clearTimeout(window._weeklyRevealTimer);const w=getSaturdayWindow();window._weeklyRevealTimer=setTimeout(()=>revealWeeklyResult(),Math.max(1000,w.reveal.getTime()-serverNow().getTime()+300));}
 async function revealWeeklyResult(){
- await syncPendingJambAttempts(false);const w=getSaturdayWindow();if(new Date()<w.reveal){scheduleWeeklyReveal();return;}let attempt=null;
+ await syncServerClock();await syncPendingJambAttempts(false);const w=getSaturdayWindow();if(serverNow()<w.reveal){scheduleWeeklyReveal();return;}let attempt=null;
  if(currentUser&&navigator.onLine){try{const {data}=await supa.from('jamb_attempts').select('*').eq('user_id',currentUser.id).eq('session_type','weekly').gte('created_at',w.start.toISOString()).lte('created_at',new Date(w.reveal.getTime()+60*60*1000).toISOString()).order('created_at',{ascending:false}).limit(1);if(data&&data.length)attempt=data[0];}catch(e){}}
  if(!attempt)attempt=getPendingJambAttempts().filter(a=>a.session_type==='weekly').sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];if(!attempt)return;
  const qb=Array.isArray(attempt.question_breakdown)?attempt.question_breakdown:[];const makeResult=(label,score,subject)=>{const qs=qb.filter(q=>(q.subjLabel||q.subject)===label||q.subject===subject);return {subj:subject||labelToJambSubjectKey(label)||label,label,correct:qs.filter(q=>q.userAns===q.ans).length,total:qs.length,pct:score||0,score100:score||0};};
  const results=[makeResult(attempt.english_label||'English',attempt.english_score,'english')];[2,3,4].forEach(n=>{const label=attempt['subject'+n+'_label'];if(label)results.push(makeResult(label,attempt['subject'+n+'_score'],labelToJambSubjectKey(label)||label));});
- hideAll();document.getElementById('jambResultsScreen').style.display='flex';setThemeToggleVisible(true);renderJAMBResults(results,attempt.aggregate_400||0,false);
+ hideAll();document.getElementById('jambResultsScreen').style.display='flex';setThemeToggleVisible(true);renderJAMBResults(results,attempt.aggregate_400||0,false,qb);
 }
 
 async function finishJAMBExam(timedOut,antiCheat){
@@ -6705,6 +6915,7 @@ async function finishJAMBExam(timedOut,antiCheat){
   jambEnded=true;
   isQuizActive=false;
   activeExamType=null;
+  clearInProgressSession();
   if(acTimer){clearInterval(acTimer);acTimer=null;}
   const ovEl=document.getElementById('antiCheatOverlay');
   if(ovEl)ovEl.classList.remove('show');
@@ -6797,7 +7008,7 @@ async function finishJAMBExam(timedOut,antiCheat){
   hideAll();
   document.getElementById('jambResultsScreen').style.display='flex';
   setThemeToggleVisible(true);
-  renderJAMBResults(results,aggregate,timedOut);
+  renderJAMBResults(results,aggregate,timedOut,questionBreakdown);
 }
 
 // ============================================================
@@ -6930,7 +7141,7 @@ async function showJambPerformance(){
   body.innerHTML=html;
 }
 
-function renderJAMBResults(results,aggregate,timedOut){
+function renderJAMBResults(results,aggregate,timedOut,questionBreakdown){
   const icon=aggregate>=240?'🏆':aggregate>=180?'👍':'💪';
   const label=aggregate>=240?'Outstanding!':aggregate>=180?'Good Performance!':'Keep Practising!';
   const col=aggregate>=240?'#0f766e':aggregate>=180?'#17a2b8':'#dc3545';
@@ -6955,6 +7166,15 @@ function renderJAMBResults(results,aggregate,timedOut){
     +'<div style="height:6px;background:#333;border-radius:3px;margin-bottom:10px;"><div style="height:100%;width:'+r.pct+'%;background:'+rc+';border-radius:3px;"></div></div>';
   });
   html+='</div>';
+
+  // Topic-level breakdown per subject (how many correct out of total, per
+  // topic that was actually asked in this attempt).
+  if(Array.isArray(questionBreakdown)&&questionBreakdown.length){
+    html+='<div style="margin-bottom:14px;">'
+      +'<div style="font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px;">📊 Topic Breakdown (tap a subject)</div>'
+      +renderBreakdownBarHTML(computeSubjectTopicBreakdown(questionBreakdown,JAMB_SUBJECTS,'jamb'),'jambResTopic')
+    +'</div>';
+  }
 
   // Aggregate totals
   html+='<div class="jamb-total-card">'
@@ -7013,6 +7233,7 @@ function renderJambReviewList(breakdown,backFn){
   const questions=breakdown.map((q,i)=>({...q,_reviewIndex:i}));
   window._jambReviewState={questions,currentIndex:0,backFn};
   buildReviewSubjectTabs('jambReviewSubjectTabs',questions,JAMB_SUBJECTS,'jamb');
+  renderReviewSummaryBar('jambReviewSummary',questions,JAMB_SUBJECTS,'jamb');
   renderInteractiveReviewQuestion('jambReviewBody','jambReviewQCounter','jambReviewProgressFill','jambReviewNextTop',questions,0,JAMB_SUBJECTS,'jamb');
 }
 
@@ -9741,18 +9962,16 @@ function onLoginSuccess(){
 // Mark offline when page closes
 window.addEventListener('beforeunload',()=>markUserOffline());
 
+// Register the service worker so the app shell (this page + its assets)
+// loads instantly with no network on repeat visits — this is also what
+// lets a phone "Install app" / "Add to Home Screen".
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(e=>console.log('SW registration failed:',e));
+  });
+}
+
 </script>
-\n<script>
-(function(){
-  const oldResults=window.renderJAMBResults;
-  if(oldResults)window.renderJAMBResults=function(results,aggregate,timedOut){
-    oldResults(results,aggregate,timedOut);
-    try{const body=document.getElementById('jambResultsBody');if(!body)return;const q=jambAllQuestions||[],s={},t={};
-      q.forEach((x,i)=>{const k=x.subjLabel||x.subject||'Mixed';if(!s[k])s[k]={label:k,c:0,n:0};s[k].n++;if(jambAnswers[i]===x.ans)s[k].c++;const tk=k+'||'+(x.topic||'Unspecified topic');if(!t[tk])t[tk]={s:k,t:x.topic||'Unspecified topic',c:0,n:0};t[tk].n++;if(jambAnswers[i]===x.ans)t[tk].c++;});
-      let h='<div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;text-align:left;"><div style="color:var(--gold);font-weight:800;font-size:.82rem;margin-bottom:8px;">📊 PASSED / FAILED BY SUBJECT</div>';Object.values(s).forEach(v=>h+='<div style="display:flex;justify-content:space-between;font-size:.72rem;padding:6px 0;border-bottom:1px solid var(--line);"><b>'+v.label+'</b><span style="color:var(--correct);font-weight:800;">Passed '+v.c+'</span><span style="color:var(--wrong);font-weight:800;">Failed '+(v.n-v.c)+'</span><span style="color:var(--muted);">/'+v.n+'</span></div>');
-      h+='<details style="margin-top:10px;"><summary style="cursor:pointer;color:var(--gold);font-weight:800;font-size:.76rem;">📚 Topic breakdown — all subjects</summary><div style="margin-top:8px;">';Object.values(t).forEach(v=>h+='<div style="font-size:.68rem;padding:5px 0;color:var(--muted);">'+v.s+' · '+v.t+' — <b style="color:var(--text);">'+v.c+'/'+v.n+' correct</b></div>');h+='</div></details></div>';body.insertAdjacentHTML('afterbegin',h);}catch(e){console.log('analytics',e);}};
-  const oldReview=window.renderInteractiveReviewQuestion;if(oldReview)window.renderInteractiveReviewQuestion=function(bodyId,counterId,progressId,nextId,questions,index,metaMap,mode){oldReview(bodyId,counterId,progressId,nextId,questions,index,metaMap,mode);if(mode!=='jamb')return;try{const body=document.getElementById(bodyId);const q=questions||[],s={},t={};q.forEach(x=>{const k=x.subjLabel||x.subject||'Mixed';if(!s[k])s[k]={c:0,n:0};s[k].n++;if(x.userAns!==undefined&&x.userAns!==null&&x.userAns===x.ans)s[k].c++;const tk=k+'||'+(x.topic||'Unspecified topic');if(!t[tk])t[tk]={s:k,t:x.topic||'Unspecified topic',c:0,n:0};t[tk].n++;if(x.userAns!==undefined&&x.userAns!==null&&x.userAns===x.ans)t[tk].c++;});let h='<details style="background:var(--accent);border:1px solid var(--line);border-radius:10px;padding:9px;margin-bottom:14px;"><summary style="cursor:pointer;color:var(--gold);font-weight:800;font-size:.75rem;">📊 Subject score + passed/failed + topics</summary><div style="margin-top:8px;">';Object.entries(s).forEach(([k,v])=>h+='<div style="font-size:.7rem;padding:5px 0;border-bottom:1px solid var(--line);"><b>'+k+'</b>: '+v.c+'/'+v.n+' correct · <span style="color:var(--wrong);">Failed '+(v.n-v.c)+'</span></div>');Object.values(t).forEach(v=>h+='<div style="font-size:.66rem;padding:4px 0;color:var(--muted);">'+v.s+' · '+v.t+' — <b style="color:var(--text);">'+v.c+'/'+v.n+' correct</b></div>');h+='</div></details>';body.insertAdjacentHTML('afterbegin',h);}catch(e){}};
-})();
-</script>
+
 </body>
 </html>
