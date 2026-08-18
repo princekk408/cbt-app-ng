@@ -7,6 +7,8 @@ const SHELL_FILES = [
   './index.html',
   './manifest.json',
   './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js'
 ];
 

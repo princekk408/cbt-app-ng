@@ -551,7 +551,11 @@
     <button id="globalSyncBtn" onclick="syncAllPendingData(true)" style="flex:1;min-width:150px;background:var(--card);border:1.5px solid var(--gold);color:var(--gold);border-radius:20px;padding:9px 12px;font-size:.72rem;font-weight:800;cursor:pointer;">☁️ Sync Saved Attempts</button>
     <a href="https://chat.whatsapp.com/BsYxiAMail6AMTXRxnrJsR?s=cl&p=a&ilr=4" target="_blank" rel="noopener" style="flex:1;min-width:150px;text-decoration:none;background:#25D366;color:#04220f;border-radius:20px;padding:9px 12px;font-size:.72rem;font-weight:800;text-align:center;">💬 Join WhatsApp Group</a>
   </div>
-  <div id="globalSyncStatus" style="font-size:.68rem;color:var(--muted);margin:-8px 0 14px;text-align:center;width:100%;max-width:500px;"></div>
+  <div id="globalSyncStatus" style="font-size:.68rem;color:var(--muted);margin:-8px 0 10px;text-align:center;width:100%;max-width:500px;"></div>
+  <div style="width:100%;max-width:500px;margin-bottom:8px;">
+    <button id="offlineDownloadBtn" onclick="downloadForOffline()" style="width:100%;background:var(--card);border:1.5px solid var(--accent2,#0f766e);color:var(--text);border-radius:20px;padding:10px 12px;font-size:.72rem;font-weight:800;cursor:pointer;">📥 Download All Questions for Offline Use</button>
+  </div>
+  <div id="offlineDownloadStatus" style="font-size:.68rem;color:var(--muted);margin:0 0 14px;text-align:center;width:100%;max-width:500px;"></div>
 
   <div id="upgradeBanner" style="display:none;width:100%;max-width:500px;background:rgba(15,118,110,0.1);border:1.5px solid var(--gold);border-radius:12px;padding:12px 14px;margin-bottom:16px;cursor:pointer;" onclick="showPaymentScreen()">
     <div style="display:flex;align-items:center;gap:10px;">
@@ -3466,6 +3470,18 @@ function showSplash(){
   updateCalcFloatBtn();
   setThemeToggleVisible(true);
   checkCloudStatus();
+  refreshOfflineDownloadStatus();
+}
+
+async function refreshOfflineDownloadStatus(){
+  const status=document.getElementById('offlineDownloadStatus');
+  if(!status)return;
+  try{
+    const dl=await idbGet('downloadedAt');
+    const cachedQB=await idbGet('QB'),cachedJamb=await idbGet('JAMB_QB');
+    const count=(cachedQB?Object.values(cachedQB).reduce((s,a)=>s+a.length,0):0)+(cachedJamb?Object.values(cachedJamb).reduce((s,a)=>s+a.length,0):0);
+    status.textContent=dl?('Last downloaded: '+new Date(dl).toLocaleString('en-NG')+' · '+count+' questions cached'):'Not downloaded yet — tap above to save the full question bank for offline use.';
+  }catch(e){status.textContent='';}
 }
 
 function showSubjectSelect(){
@@ -6096,19 +6112,26 @@ async function idbGet(key){
 async function downloadForOffline(){
   const btn=document.getElementById('offlineDownloadBtn');
   const status=document.getElementById('offlineDownloadStatus');
-  if(btn){btn.disabled=true;btn.textContent='⏳ Downloading...';}
+  if(!navigator.onLine){if(status)status.textContent='📴 You need an internet connection to download the question bank.';return;}
+  if(btn){btn.disabled=true;btn.textContent='⏳ Downloading all questions...';}
+  if(status)status.textContent='Fetching the full question bank from the cloud — this can take a moment on 2000+ questions...';
   try{
+    // Force a full, paginated reload first, so we cache everything —
+    // not just whatever happened to already be in memory.
+    await Promise.all([loadCloudQuestionsIntoQB(),loadJambQuestionBank(),loadFlashcardsData(),loadStudyNotesData()]);
     await idbSet('QB',QB);
     await idbSet('JAMB_QB',JAMB_QB);
     await idbSet('FLASHCARDS_DATA',FLASHCARDS_DATA);
     await idbSet('STUDY_NOTES_DATA',STUDY_NOTES_DATA);
     await idbSet('subjectMeta',subjectMeta);
     await idbSet('downloadedAt',new Date().toISOString());
-    if(status)status.textContent='✅ Downloaded — ready for offline practice';
+    const jambCount=Object.values(JAMB_QB).reduce((s,a)=>s+a.length,0);
+    const genCount=Object.values(QB).reduce((s,a)=>s+a.length,0);
+    if(status)status.textContent='✅ Downloaded '+(jambCount+genCount)+' questions ('+genCount+' general + '+jambCount+' JAMB) — ready for offline practice.';
   }catch(e){
     if(status)status.textContent='❌ Download failed: '+e.message;
   }
-  if(btn){btn.disabled=false;btn.textContent='📥 Download Questions for Offline Use';}
+  if(btn){btn.disabled=false;btn.textContent='📥 Download All Questions for Offline Use';}
 }
 
 // Loads everything from the local offline cache instead of the network —
@@ -6162,10 +6185,30 @@ function updateOfflineBanner(){
   if(el) el.style.display=offlineMode?'block':'none';
 }
 
+// Supabase caps a single .select() at ~1000 rows by default — with 2000+
+// questions in the bank, an unpaginated query silently truncates (no
+// error, just missing rows), which is why offline/some subjects were
+// short on questions. This fetches ALL rows in pages until exhausted.
+async function fetchAllRows(table,selectCols,extra){
+  const PAGE=1000;
+  let from=0,all=[],done=false;
+  while(!done){
+    let q=supa.from(table).select(selectCols||'*').range(from,from+PAGE-1);
+    if(extra)q=extra(q);
+    const {data,error}=await q;
+    if(error){console.log('fetchAllRows error on',table,error);break;}
+    if(!data||!data.length){done=true;break;}
+    all=all.concat(data);
+    if(data.length<PAGE)done=true;
+    from+=PAGE;
+  }
+  return all;
+}
+
 async function loadCloudQuestionsIntoQB(){
   try{
-    const {data,error}=await supa.from('questions').select('*');
-    if(error||!data)return;
+    const data=await fetchAllRows('questions');
+    if(!data||!data.length)return;
     data.forEach(q=>{
       const subj=(q.subject||'general').toLowerCase().replace(/\s+/g,'');
       if(!QB[subj])QB[subj]=[];
@@ -6178,7 +6221,8 @@ async function loadCloudQuestionsIntoQB(){
           opts:[q.option_a,q.option_b,q.option_c,q.option_d,q.option_e].filter(Boolean),
           ans:q.correct_answer,
           explanation:q.explanation||'',
-          difficulty:q.difficulty||'moderate'
+          difficulty:q.difficulty||'moderate',
+          topic:q.topic||null
         });
       }
     });
@@ -6195,11 +6239,11 @@ let JAMB_QB_LOADED=false;
 
 async function loadJambQuestionBank(){
   try{
-    const [{data:questions,error:qErr},{data:passages,error:pErr}]=await Promise.all([
-      supa.from('jamb_questions').select('*'),
-      supa.from('jamb_passages').select('*')
+    const [questions,passages]=await Promise.all([
+      fetchAllRows('jamb_questions'),
+      fetchAllRows('jamb_passages')
     ]);
-    if(qErr||!questions){console.log('JAMB QB load error:',qErr);return;}
+    if(!questions){console.log('JAMB QB load error');return;}
     const passageMap={};
     (passages||[]).forEach(p=>{passageMap[p.id]=p;});
 
@@ -7589,10 +7633,16 @@ if(_sessionVersion!=='2'){
 // Check if already logged in
 currentUser=getCurrentUser();
 if(currentUser){
-  loadCloudQuestionsIntoQB();
-  loadJambQuestionBank();
-  loadFlashcardsData();
-  loadStudyNotesData();
+  if(navigator.onLine){
+    loadCloudQuestionsIntoQB();
+    loadJambQuestionBank();
+    loadFlashcardsData();
+    loadStudyNotesData();
+  }else{
+    // No connection at boot — use whatever was downloaded earlier via
+    // "Download All Questions for Offline Use" instead of an empty bank.
+    loadFromOfflineCache();
+  }
   loadStudyPlanEntries();
   if('Notification' in window && Notification.permission==='granted') startReminderChecker();
   showSplash();
@@ -9944,8 +9994,12 @@ function showToast(msg,duration){
 // ============================================================
 function onLoginSuccess(){
   localStorage.setItem('rsu_session_v','2');
-  loadCloudQuestionsIntoQB();
-  loadJambQuestionBank();
+  if(navigator.onLine){
+    loadCloudQuestionsIntoQB();
+    loadJambQuestionBank();
+  }else{
+    loadFromOfflineCache();
+  }
   loadFlashcardsData();
   loadStudyNotesData();
   loadStudyPlanEntries();
