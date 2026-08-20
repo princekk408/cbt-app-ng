@@ -9,6 +9,7 @@
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
 <style>
   /* Professional palette: default is a clean light/white theme with a single
      confident blue accent, replacing the previous neon-gold gaming look.
@@ -5092,11 +5093,113 @@ function renderAdminNotesForm(){
     +'<div><label class="af-label">Subject</label><select class="af-input" id="snSubject" style="margin-bottom:10px;">'+jambSubjectOptions()+'</select></div>'
     +'<label class="af-label">Title</label>'
     +'<input class="af-input" id="snTitle" style="margin-bottom:10px;" placeholder="e.g. Photosynthesis Overview">'
+
+    +'<label class="af-label">📄 Upload a Word document (.docx) — optional</label>'
+    +'<div style="font-size:.68rem;color:var(--muted);margin-bottom:6px;">Headings, paragraphs and images inside the document are pulled in automatically. You can still edit the text below afterwards.</div>'
+    +'<input type="file" id="snDocxFile" accept=".docx" style="margin-bottom:6px;" onchange="handleNoteDocxUpload(this)">'
+    +'<div id="snDocxStatus" style="font-size:.7rem;margin-bottom:10px;"></div>'
+
     +'<label class="af-label">Content</label>'
-    +'<textarea class="af-input" id="snContent" rows="10" style="resize:vertical;min-height:180px;margin-bottom:10px;" placeholder="Write the note content here..."></textarea>'
+    +'<textarea class="af-input" id="snContent" rows="10" style="resize:vertical;min-height:180px;margin-bottom:10px;" placeholder="Write the note content here, or upload a .docx above to fill this in automatically..."></textarea>'
+
+    +'<label class="af-label">🖼️ Add extra image(s) to this note — optional</label>'
+    +'<div style="font-size:.68rem;color:var(--muted);margin-bottom:6px;">These are added to the end of the note content, in addition to anything already there.</div>'
+    +'<input type="file" id="snImageFiles" accept="image/*" multiple style="margin-bottom:6px;" onchange="handleNoteImagesUpload(this)">'
+    +'<div id="snImageStatus" style="font-size:.7rem;margin-bottom:10px;"></div>'
+
+    +'<div style="font-size:.68rem;color:var(--muted);font-weight:700;margin:4px 0 6px;">👁️ Preview</div>'
+    +'<div id="snPreview" style="background:var(--card);border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:14px;min-height:40px;font-size:.82rem;line-height:1.5;"><span style="color:var(--muted);">Nothing to preview yet.</span></div>'
+
     +'<button onclick="adminAddNote()" style="background:var(--gold);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-weight:700;cursor:pointer;width:100%;">☁️ Save Note</button>'
     +'<div id="snResult" style="margin-top:10px;"></div>'
   +'</div>';
+  const contentBox=document.getElementById('snContent');
+  contentBox.addEventListener('input',updateNotePreview);
+}
+
+function updateNotePreview(){
+  const val=document.getElementById('snContent').value.trim();
+  const prev=document.getElementById('snPreview');
+  prev.innerHTML=val?formatMathText(val):'<span style="color:var(--muted);">Nothing to preview yet.</span>';
+}
+
+// Uploads one image Blob/File to the "note-images" Supabase Storage
+// bucket and returns its public URL (or throws with a friendly message
+// if the bucket hasn't been created yet).
+async function uploadNoteImageFile(file,ext){
+  const safeExt=(ext||(file.name?file.name.split('.').pop():'png')||'png').toLowerCase();
+  const fileName='note_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+safeExt;
+  const {error}=await supa.storage.from('note-images').upload(fileName,file);
+  if(error){
+    const isMissingBucket=/bucket/i.test(error.message)&&/not\s*found/i.test(error.message);
+    throw new Error(isMissingBucket
+      ?'The "note-images" Storage bucket doesn\'t exist yet in Supabase. Go to Supabase → Storage → New bucket → name it exactly "note-images" → turn ON Public bucket → create it, then try again.'
+      :'Image upload failed: '+error.message);
+  }
+  const {data:pub}=supa.storage.from('note-images').getPublicUrl(fileName);
+  return pub?.publicUrl||null;
+}
+
+// Parses an uploaded .docx client-side (mammoth.js), uploading any
+// images embedded inside the document to Supabase Storage as it goes,
+// and fills the Title/Content fields with the result.
+async function handleNoteDocxUpload(input){
+  const status=document.getElementById('snDocxStatus');
+  const file=input.files&&input.files[0];
+  if(!file)return;
+  if(typeof mammoth==='undefined'){status.innerHTML='<span style="color:var(--wrong);">Document reader failed to load — check your connection and try again.</span>';return;}
+  status.innerHTML='<span style="color:var(--muted);">⏳ Reading document...</span>';
+  try{
+    const arrayBuffer=await file.arrayBuffer();
+    const result=await mammoth.convertToHtml({arrayBuffer},{
+      convertImage:mammoth.images.imgElement(async(image)=>{
+        const base64=await image.read('base64');
+        const byteChars=atob(base64);
+        const byteNumbers=new Array(byteChars.length);
+        for(let i=0;i<byteChars.length;i++)byteNumbers[i]=byteChars.charCodeAt(i);
+        const blob=new Blob([new Uint8Array(byteNumbers)],{type:image.contentType||'image/png'});
+        try{
+          const ext=(image.contentType||'image/png').split('/').pop();
+          const url=await uploadNoteImageFile(blob,ext);
+          return {src:url};
+        }catch(e){
+          console.log('Note image upload failed, embedding inline instead:',e);
+          return {src:'data:'+(image.contentType||'image/png')+';base64,'+base64};
+        }
+      })
+    });
+    document.getElementById('snContent').value=result.value;
+    if(!document.getElementById('snTitle').value.trim()){
+      document.getElementById('snTitle').value=file.name.replace(/\.docx$/i,'').replace(/[_-]+/g,' ');
+    }
+    updateNotePreview();
+    const warnings=result.messages&&result.messages.length?' ('+result.messages.length+' minor formatting note(s) — usually safe to ignore)':'';
+    status.innerHTML='<span style="color:var(--correct);">✅ Document imported'+warnings+'. Review the content below, then Save.</span>';
+  }catch(e){
+    status.innerHTML='<span style="color:var(--wrong);">❌ Could not read that document: '+e.message+'</span>';
+  }
+}
+
+// Uploads one or more standalone images and appends them to the note
+// content (in addition to whatever text/docx content is already there).
+async function handleNoteImagesUpload(input){
+  const status=document.getElementById('snImageStatus');
+  const files=input.files?Array.from(input.files):[];
+  if(!files.length)return;
+  status.innerHTML='<span style="color:var(--muted);">⏳ Uploading '+files.length+' image(s)...</span>';
+  const contentBox=document.getElementById('snContent');
+  let added=0,firstError=null;
+  for(const file of files){
+    try{
+      const url=await uploadNoteImageFile(file);
+      contentBox.value+=(contentBox.value.trim()?'\n':'')+'<p><img src="'+url+'" alt="'+(file.name||'image').replace(/"/g,'')+'" style="max-width:100%;border-radius:8px;"></p>';
+      added++;
+    }catch(e){firstError=e.message;}
+  }
+  updateNotePreview();
+  status.innerHTML=added
+    ?'<span style="color:var(--correct);">✅ Added '+added+' image(s) to the note content.</span>'+(firstError?' <span style="color:var(--wrong);">('+firstError+')</span>':'')
+    :'<span style="color:var(--wrong);">❌ '+(firstError||'Upload failed.')+'</span>';
 }
 
 async function adminAddNote(){
@@ -5111,6 +5214,11 @@ async function adminAddNote(){
     resultDiv.innerHTML='<div style="color:var(--correct);font-weight:700;">✅ Note saved!</div>';
     document.getElementById('snTitle').value='';
     document.getElementById('snContent').value='';
+    const docxInput=document.getElementById('snDocxFile');if(docxInput)docxInput.value='';
+    const imgInput=document.getElementById('snImageFiles');if(imgInput)imgInput.value='';
+    const docxStatus=document.getElementById('snDocxStatus');if(docxStatus)docxStatus.innerHTML='';
+    const imgStatus=document.getElementById('snImageStatus');if(imgStatus)imgStatus.innerHTML='';
+    updateNotePreview();
     await loadStudyNotesData();
   }catch(e){resultDiv.innerHTML='<div style="color:var(--wrong);">Error: '+e.message+'</div>';}
 }
