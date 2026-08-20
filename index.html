@@ -5035,12 +5035,18 @@ async function verifyPayment(userId){
 // ADMIN: FLASHCARDS & STUDY NOTES CONTENT MANAGEMENT
 // ============================================================
 let adminContentTab='flashcards';
+let adminContentMode='add';
 function renderAdminContent(){
   const body=document.getElementById('adminBody');
-  body.innerHTML='<div style="display:flex;gap:8px;margin-bottom:14px;">'
+  body.innerHTML='<div style="display:flex;gap:8px;margin-bottom:10px;">'
     +'<button id="acTabFlash" onclick="setAdminContentTab(\'flashcards\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--gold);background:var(--gold);color:#fff;font-weight:700;cursor:pointer;font-size:0.82rem;">🗂️ Flashcards</button>'
     +'<button id="acTabNotes" onclick="setAdminContentTab(\'notes\')" style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-weight:700;cursor:pointer;font-size:0.82rem;">📖 Study Notes</button>'
-    +'</div><div id="acSubBody"></div>';
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:14px;">'
+    +'<button id="acModeAdd" onclick="setAdminContentMode(\'add\')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;cursor:pointer;font-size:0.74rem;">➕ Add New</button>'
+    +'<button id="acModeManage" onclick="setAdminContentMode(\'manage\')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;cursor:pointer;font-size:0.74rem;">🗑️ Manage / Delete</button>'
+    +'</div>'
+    +'<div id="acSubBody"></div>';
   setAdminContentTab('flashcards');
 }
 function setAdminContentTab(tab){
@@ -5049,7 +5055,75 @@ function setAdminContentTab(tab){
   document.getElementById('acTabFlash').style.color=tab==='flashcards'?'#fff':'var(--text)';
   document.getElementById('acTabNotes').style.background=tab==='notes'?'var(--gold)':'var(--card)';
   document.getElementById('acTabNotes').style.color=tab==='notes'?'#fff':'var(--text)';
-  if(tab==='flashcards') renderAdminFlashcardForm(); else renderAdminNotesForm();
+  renderAdminContentSubBody();
+}
+function setAdminContentMode(mode){
+  adminContentMode=mode;
+  document.getElementById('acModeAdd').style.background=mode==='add'?'var(--gold)':'var(--card)';
+  document.getElementById('acModeAdd').style.color=mode==='add'?'#fff':'var(--text)';
+  document.getElementById('acModeManage').style.background=mode==='manage'?'var(--gold)':'var(--card)';
+  document.getElementById('acModeManage').style.color=mode==='manage'?'#fff':'var(--text)';
+  renderAdminContentSubBody();
+}
+function renderAdminContentSubBody(){
+  if(adminContentMode==='add'){
+    if(adminContentTab==='flashcards')renderAdminFlashcardForm();else renderAdminNotesForm();
+  }else{
+    if(adminContentTab==='flashcards')renderAdminFlashcardManageList();else renderAdminNotesManageList();
+  }
+}
+
+async function renderAdminFlashcardManageList(){
+  const body=document.getElementById('acSubBody');
+  body.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);">Loading flashcards...</div>';
+  const {data,error}=await supa.from('flashcards').select('*').order('created_at',{ascending:false});
+  if(error){body.innerHTML='<div style="color:var(--wrong);padding:20px;">Failed to load: '+error.message+'</div>';return;}
+  if(!data||!data.length){body.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">No flashcards saved yet.</div>';return;}
+  body.innerHTML='<div style="font-size:.7rem;color:var(--muted);margin-bottom:10px;">'+data.length+' flashcard(s)</div>'
+    +data.map(c=>{
+      const m=subjectMeta[c.subject]||JAMB_SUBJECTS[c.subject]||{icon:'📌',name:c.subject};
+      return '<div class="admin-card" style="margin-bottom:8px;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:.68rem;color:var(--gold);font-weight:700;">'+m.icon+' '+m.name+(c.topic?' · '+c.topic:'')+'</div>'
+          +'<div style="font-size:.8rem;font-weight:700;margin-top:3px;">'+(c.front||'').slice(0,80)+'</div>'
+          +'<div style="font-size:.72rem;color:var(--muted);margin-top:2px;">'+(c.back||'').slice(0,80)+'</div>'
+        +'</div>'
+        +'<button onclick="adminDeleteFlashcard(\''+c.id+'\')" style="background:none;border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;">🗑️ Delete</button>'
+      +'</div>';
+    }).join('');
+}
+async function adminDeleteFlashcard(id){
+  if(!confirm('Delete this flashcard permanently? This cannot be undone.'))return;
+  const {error}=await supa.from('flashcards').delete().eq('id',id);
+  if(error){alert('Delete failed: '+error.message);return;}
+  await loadFlashcardsData();
+  renderAdminFlashcardManageList();
+}
+
+async function renderAdminNotesManageList(){
+  const body=document.getElementById('acSubBody');
+  body.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);">Loading study notes...</div>';
+  const {data,error}=await supa.from('study_notes').select('*').order('created_at',{ascending:false});
+  if(error){body.innerHTML='<div style="color:var(--wrong);padding:20px;">Failed to load: '+error.message+'</div>';return;}
+  if(!data||!data.length){body.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">No study notes saved yet.</div>';return;}
+  body.innerHTML='<div style="font-size:.7rem;color:var(--muted);margin-bottom:10px;">'+data.length+' note(s)</div>'
+    +data.map(n=>{
+      const m=subjectMeta[n.subject]||JAMB_SUBJECTS[n.subject]||{icon:'📌',name:n.subject};
+      return '<div class="admin-card" style="margin-bottom:8px;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:.68rem;color:var(--gold);font-weight:700;">'+m.icon+' '+m.name+'</div>'
+          +'<div style="font-size:.8rem;font-weight:700;margin-top:3px;">'+(n.title||'Untitled')+'</div>'
+        +'</div>'
+        +'<button onclick="adminDeleteNote(\''+n.id+'\')" style="background:none;border:1px solid var(--wrong);color:var(--wrong);border-radius:8px;padding:6px 10px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;">🗑️ Delete</button>'
+      +'</div>';
+    }).join('');
+}
+async function adminDeleteNote(id){
+  if(!confirm('Delete this study note permanently? This cannot be undone.'))return;
+  const {error}=await supa.from('study_notes').delete().eq('id',id);
+  if(error){alert('Delete failed: '+error.message);return;}
+  await loadStudyNotesData();
+  renderAdminNotesManageList();
 }
 
 function renderAdminFlashcardForm(){
