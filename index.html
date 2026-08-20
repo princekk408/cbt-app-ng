@@ -3604,6 +3604,17 @@ function formatMathText(str){
   if(str===null||str===undefined)return '';
   let out=String(str);
 
+  // Protect any existing HTML tags (e.g. an <img src="..."> inserted by
+  // the Study Notes docx/image uploader) from the plain-text formatting
+  // rules below. Without this, a filename like "note_123456_abcd.jpg"
+  // gets its "_123456" turned into a subscript by the chemistry
+  // formatter further down, silently corrupting the image URL.
+  const protectedTags=[];
+  out=out.replace(/<[a-zA-Z!/][^>]*>/g,(m)=>{
+    protectedTags.push(m);
+    return '\u0000TAG'+(protectedTags.length-1)+'\u0000';
+  });
+
   // ============================================================
   // SCIENTIFIC / CHEMISTRY FORMATTER
   // Admin input is intentionally plain text so it survives paste.
@@ -3671,6 +3682,9 @@ function formatMathText(str){
 
   // Superscript: signed/unsigned numbers, or a single letter.
   out=out.replace(/\^([+-]?\d+|[A-Za-z])/g,'<sup>$1</sup>');
+
+  // Restore protected HTML tags now that plain-text formatting is done.
+  out=out.replace(/\u0000TAG(\d+)\u0000/g,(m,i)=>protectedTags[Number(i)]);
 
   return out;
 }
@@ -5202,7 +5216,7 @@ function updateNotePreview(){
 // if the bucket hasn't been created yet).
 async function uploadNoteImageFile(file,ext){
   const safeExt=(ext||(file.name?file.name.split('.').pop():'png')||'png').toLowerCase();
-  const fileName='note_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+safeExt;
+  const fileName='note-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+safeExt;
   const {error}=await supa.storage.from('note-images').upload(fileName,file);
   if(error){
     const isMissingBucket=/bucket/i.test(error.message)&&/not\s*found/i.test(error.message);
