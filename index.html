@@ -10,6 +10,12 @@
 <link rel="apple-touch-icon" href="./icon.svg">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script>
+  if(typeof pdfjsLib!=='undefined'){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+</script>
 <style>
   /* Professional palette: default is a clean light/white theme with a single
      confident blue accent, replacing the previous neon-gold gaming look.
@@ -5182,9 +5188,9 @@ function renderAdminNotesForm(){
     +'<label class="af-label">Title</label>'
     +'<input class="af-input" id="snTitle" style="margin-bottom:10px;" placeholder="e.g. Photosynthesis Overview">'
 
-    +'<label class="af-label">📄 Upload a Word document (.docx) — optional</label>'
-    +'<div style="font-size:.68rem;color:var(--muted);margin-bottom:6px;">Headings, paragraphs and images inside the document are pulled in automatically. You can still edit the text below afterwards.</div>'
-    +'<input type="file" id="snDocxFile" accept=".docx" style="margin-bottom:6px;" onchange="handleNoteDocxUpload(this)">'
+    +'<label class="af-label">📄 Upload a document (.docx or .pdf) — optional</label>'
+    +'<div style="font-size:.68rem;color:var(--muted);margin-bottom:6px;">Word docs import their text and images cleanly. PDFs import as text PLUS a picture of each full page (so diagrams/figures come through too) — this makes PDF-based notes a bit heavier to load.</div>'
+    +'<input type="file" id="snDocxFile" accept=".docx,.pdf" style="margin-bottom:6px;" onchange="handleNoteDocumentUpload(this)">'
     +'<div id="snDocxStatus" style="font-size:.7rem;margin-bottom:10px;"></div>'
 
     +'<label class="af-label">Content</label>'
@@ -5228,12 +5234,21 @@ async function uploadNoteImageFile(file,ext){
   return pub?.publicUrl||null;
 }
 
+// Routes to the right parser based on file extension.
+async function handleNoteDocumentUpload(input){
+  const file=input.files&&input.files[0];
+  if(!file)return;
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  if(ext==='pdf')await handleNotePdfUpload(input,file);
+  else await handleNoteDocxUpload(input,file);
+}
+
 // Parses an uploaded .docx client-side (mammoth.js), uploading any
 // images embedded inside the document to Supabase Storage as it goes,
 // and fills the Title/Content fields with the result.
-async function handleNoteDocxUpload(input){
+async function handleNoteDocxUpload(input,fileArg){
   const status=document.getElementById('snDocxStatus');
-  const file=input.files&&input.files[0];
+  const file=fileArg||(input.files&&input.files[0]);
   if(!file)return;
   if(typeof mammoth==='undefined'){status.innerHTML='<span style="color:var(--wrong);">Document reader failed to load — check your connection and try again.</span>';return;}
   status.innerHTML='<span style="color:var(--muted);">⏳ Reading document...</span>';
@@ -5265,6 +5280,91 @@ async function handleNoteDocxUpload(input){
     status.innerHTML='<span style="color:var(--correct);">✅ Document imported'+warnings+'. Review the content below, then Save.</span>';
   }catch(e){
     status.innerHTML='<span style="color:var(--wrong);">❌ Could not read that document: '+e.message+'</span>';
+  }
+}
+
+// Parses an uploaded .pdf client-side (pdf.js): extracts the text of
+// every page into the Content box AND renders each page as an image
+// (uploaded to Storage), placed right under that page's text. Pulling
+// individual embedded images back out of a PDF is unreliable across
+// different PDF producers/encodings — rendering the whole page as a
+// picture is the one approach that reliably keeps every diagram/figure
+// exactly as it looked in the original, at the cost of a larger note.
+async function handleNotePdfUpload(input,fileArg){
+  const status=document.getElementById('snDocxStatus');
+  const file=fileArg||(input.files&&input.files[0]);
+  if(!file)return;
+  if(typeof pdfjsLib==='undefined'){status.innerHTML='<span style="color:var(--wrong);">PDF reader failed to load — check your connection and try again.</span>';return;}
+  status.innerHTML='<span style="color:var(--muted);">⏳ Reading PDF...</span>';
+  try{
+    const arrayBuffer=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    let htmlParts=[];
+    let imageFailCount=0;
+    for(let p=1;p<=pdf.numPages;p++){
+      status.innerHTML='<span style="color:var(--muted);">⏳ Processing page '+p+' of '+pdf.numPages+'...</span>';
+      const page=await pdf.getPage(p);
+
+      // 1) Extract the page's text, grouped into lines by vertical position
+      //    (pdf.js gives individual text fragments, not ready-made lines).
+      const textContent=await page.getTextContent();
+      const lines=[];
+      let currentY=null,currentLine=[];
+      textContent.items.forEach(item=>{
+        const y=Math.round(item.transform[5]);
+        if(currentY===null||Math.abs(y-currentY)>3){
+          if(currentLine.length)lines.push(currentLine.join(' '));
+          currentLine=[item.str];
+          currentY=y;
+        }else{
+          currentLine.push(item.str);
+        }
+      });
+      if(currentLine.length)lines.push(currentLine.join(' '));
+      const pageText=lines.filter(l=>l.trim()).map(l=>'<p>'+l.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p>').join('');
+
+      // 2) Render the whole page as an image, so any diagram/figure on it
+      //    comes along guaranteed — this is what actually answers "add
+      //    the images in the PDF too".
+      let pageImageHtml='';
+      try{
+        const viewport=page.getViewport({scale:1.6});
+        const canvas=document.createElement('canvas');
+        canvas.width=viewport.width;canvas.height=viewport.height;
+        await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.82));
+        if(blob){
+          const url=await uploadNoteImageFile(blob,'jpg');
+          pageImageHtml='<p><img src="'+url+'" alt="Page '+p+'" style="max-width:100%;border-radius:8px;"></p>';
+        }
+      }catch(e){
+        imageFailCount++;
+        console.log('Could not render page',p,'as an image:',e);
+      }
+
+      if(pageText||pageImageHtml)htmlParts.push(pageText+pageImageHtml);
+    }
+    let contentHtml=htmlParts.join('');
+
+    // Also keep a link to the original PDF file, as a fallback students
+    // can open directly if anything above didn't come through cleanly.
+    try{
+      const pdfUrl=await uploadNoteImageFile(file,'pdf');
+      if(pdfUrl){
+        contentHtml='<p><a href="'+pdfUrl+'" target="_blank" rel="noopener">📄 View Original PDF</a></p>'+contentHtml;
+      }
+    }catch(e){console.log('Original PDF upload failed (text/page images still imported):',e);}
+
+    document.getElementById('snContent').value=contentHtml;
+    if(!document.getElementById('snTitle').value.trim()){
+      document.getElementById('snTitle').value=file.name.replace(/\.pdf$/i,'').replace(/[_-]+/g,' ');
+    }
+    updateNotePreview();
+    status.innerHTML='<span style="color:var(--correct);">✅ Imported '+pdf.numPages+' page(s) — text plus a full-page image of each, so any diagrams come through too.</span>'
+      +(imageFailCount?' <span style="color:var(--wrong);">('+imageFailCount+' page image(s) failed to render — the text and the original-PDF link still cover those.)</span>':'')
+      +' Review below, then Save.';
+  }catch(e){
+    status.innerHTML='<span style="color:var(--wrong);">❌ Could not read that PDF: '+e.message+'</span>';
   }
 }
 

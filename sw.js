@@ -1,7 +1,7 @@
 // Service worker for offline app-shell caching.
 // Bump CACHE_NAME whenever you deploy a new index.html so returning
 // users get the update instead of a stale cached copy.
-const CACHE_NAME = 'rsu-jamb-cbt-v4';
+const CACHE_NAME = 'rsu-jamb-cbt-v6';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -9,7 +9,10 @@ const SHELL_FILES = [
   './icon.svg',
   './icon-192.png',
   './icon-512.png',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+  'https://cdn.jsdelivr.net/npm/mammoth@1.7.0/mammoth.browser.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
 ];
 
 self.addEventListener('install', (event) => {
