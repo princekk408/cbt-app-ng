@@ -3666,13 +3666,52 @@ function formatMathText(str){
     '[Phi]':'Φ','[Omega]':'Ω','[infinity]':'∞','[degree]':'°',
     '[pm]':'±','[plusminus]':'±','[times]':'×','[div]':'÷',
     '[le]':'≤','[ge]':'≥','[neq]':'≠','[approx]':'≈',
-    '[propto]':'∝','[therefore]':'∴','[perp]':'⊥','[angle]':'∠',
-    '[parallel]':'∥','[integral]':'∫','[sum]':'Σ',
+    '[propto]':'∝','[therefore]':'∴','[because]':'∵','[perp]':'⊥','[angle]':'∠',
+    '[parallel]':'∥','[integral]':'∫','[sum]':'Σ','[sqrt]':'√','[root]':'√',
     '[rightarrow]':'→','[->]':'→','[-->]':'→',
     '[leftarrow]':'←','[<-]':'←',
     '[reversible]':'⇌','[equilibrium]':'⇌','[equil]':'⇌',
     '[Rightarrow]':'⇒','[Leftarrow]':'⇐',
-    '[uparrow]':'↑','[downarrow]':'↓'
+    '[uparrow]':'↑','[downarrow]':'↓',
+
+    // ── ENGLISH PHONETIC SYMBOLS (IPA) — for Vowel Sounds, Consonant
+    // Sounds, and Emphatic/Syllabic Stress questions. Ordinary letters
+    // can't represent these sounds; regular keyboards have no key for
+    // them either, so they need this bracket shorthand.
+    // Consonants:
+    '[th]':'θ',          // voiceless th, as in "THANK", "THIN"
+    '[dh]':'ð',          // voiced th, as in "THIS", "THAT", "MOTHER"
+    '[sh]':'ʃ',          // as in "SHIP", "NATION"
+    '[zh]':'ʒ',          // as in "meaSURE", "viSION"
+    '[ch]':'ʧ',          // as in "CHURCH", "MATCH"
+    '[jh]':'ʤ',          // as in "JUDGE", "BRIDGE"
+    '[ng]':'ŋ',          // as in "SING", "THINK"
+    // Short vowels:
+    '[short-i]':'ɪ',     // as in "SIT", "BID"
+    '[short-e]':'e',     // as in "BED", "MET"
+    '[short-a]':'æ',     // as in "CAT", "MAN"
+    '[short-u]':'ʌ',     // as in "CUP", "BUT"
+    '[short-o]':'ɒ',     // as in "HOT", "DOG"
+    '[short-oo]':'ʊ',    // as in "PUT", "BOOK"
+    '[schwa]':'ə',       // the unstressed "uh" sound, as in "ABOUT", "sofA"
+    // Long vowels:
+    '[long-ee]':'iː',    // as in "SEE", "MEAT"
+    '[long-ah]':'ɑː',    // as in "CAR", "FATHER"
+    '[long-or]':'ɔː',    // as in "LAW", "CAUGHT"
+    '[long-oo]':'uː',    // as in "FOOD", "MOON"
+    '[long-er]':'ɜː',    // as in "BIRD", "TURN"
+    // Diphthongs (two vowel sounds gliding together):
+    '[ay]':'eɪ',         // as in "DAY", "MAKE"
+    '[eye]':'aɪ',        // as in "MY", "TIME"
+    '[oy]':'ɔɪ',         // as in "BOY", "COIN"
+    '[oh]':'əʊ',         // as in "GO", "HOME"
+    '[ow]':'aʊ',         // as in "HOW", "OUT"
+    '[ear]':'ɪə',        // as in "HERE", "BEER"
+    '[air]':'eə',        // as in "HAIR", "CARE"
+    '[oor]':'ʊə',        // as in "TOUR", "SURE"
+    // Stress marks:
+    '[stress]':'ˈ',      // primary stress, placed before the stressed syllable
+    '[sec-stress]':'ˌ'   // secondary stress
   };
   Object.keys(symbols).forEach(k=>{out=out.split(k).join(symbols[k]);});
 
@@ -3689,12 +3728,22 @@ function formatMathText(str){
   // Superscript: signed/unsigned numbers, or a single letter.
   out=out.replace(/\^([+-]?\d+|[A-Za-z])/g,'<sup>$1</sup>');
 
+  // ============================================================
+  // BOLD, ITALIC & UNDERLINE
+  // Type **word** for bold, *word* for italic, __word__ for underline.
+  // This is what lets a vowel/consonant-sound question actually show
+  // the tested letter underlined (e.g. "the __t__ in tea") instead of
+  // just describing it in words.
+  // ============================================================
+  out=out.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  out=out.replace(/\*(.+?)\*/g,'<i>$1</i>');
+  out=out.replace(/__(.+?)__/g,'<u>$1</u>');
+
   // Restore protected HTML tags now that plain-text formatting is done.
   out=out.replace(/\u0000TAG(\d+)\u0000/g,(m,i)=>protectedTags[Number(i)]);
 
   return out;
 }
-
 function renderQuestion(){
   const q=currentSession[currentIndex];
   const total=currentSession.length;
@@ -5791,14 +5840,14 @@ function renderJambBulkForm(){
     +'<div style="color:var(--gold);font-weight:700;margin-bottom:6px;">📋 Bulk Add → JAMB Bank Only</div>'
     +'<div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">These questions are saved ONLY to the dedicated JAMB bank — separate from your general question bank — and are what the JAMB session draws from.</div>'
     +'<div style="background:var(--accent);border-radius:10px;padding:10px 12px;font-size:0.72rem;color:var(--text);line-height:1.6;margin-bottom:12px;">'
-      +'💡 <strong>Multi-subject paste:</strong> drop a <code>Subject: Physics</code>, <code>Difficulty: Easy</code>, <code>Year: 2019</code> or <code>Topic: Mechanics</code> line anywhere before a question and it applies to every question after it — until the next tag changes it. Paste several subjects and difficulty groups in one go; the dropdowns below are just the fallback for anything untagged.<br><br>💡 <strong>Comprehension/Cloze passages:</strong> add <code>Passage: My Title</code> on its own line, then the passage text on the following lines, then a line that just says <code>PassageEnd</code>. Every question after it shares that same passage automatically — until a new Passage tag appears.'
+      +'💡 <strong>Multi-subject paste:</strong> drop a <code>Subject: Physics</code>, <code>Difficulty: Easy</code>, <code>Year: 2019</code> or <code>Topic: Mechanics</code> line anywhere before a question and it applies to every question after it — until the next tag changes it. Paste several subjects and difficulty groups in one go; the dropdowns below are just the fallback for anything untagged.<br><br>💡 <strong>Mixing English question types in one paste:</strong> drop a <code>Type: Synonym</code>, <code>Type: Antonym</code>, <code>Type: Comprehension Passage</code> etc. line before each group — it works exactly like Subject/Difficulty and overrides the "English Question Type" dropdown below for every question after it. Without a <code>Type:</code> tag, questions fall back to whatever the dropdown is set to — so mixing types WITHOUT this tag will mislabel everything as one type.<br><br>💡 <strong>Comprehension/Cloze passages:</strong> add <code>Passage: My Title</code> on its own line, then the passage text on the following lines, then a line that just says <code>PassageEnd</code>. Every question after it shares that same passage automatically — until a new Passage tag appears.'
     +'</div>'
     +'<div class="af-row">'
       +'<div><label class="af-label">Default Subject (fallback)</label><select class="af-input" id="jbSubject">'+jambSubjectOptions()+'</select></div>'
       +'<div><label class="af-label">Default Difficulty (fallback)</label><select class="af-input" id="jbDiff"><option value="easy">Easy</option><option value="moderate" selected>Moderate</option><option value="hard">Hard</option></select></div>'
     +'</div>'
     +'<div class="af-row">'
-      +'<div><label class="af-label">English Question Type</label><select class="af-input" id="jbQType">'+englishTypeOptions()+'</select></div>'
+      +'<div><label class="af-label">English Question Type (fallback if no "Type:" tag used)</label><select class="af-input" id="jbQType">'+englishTypeOptions()+'</select></div>'
       +'<div><label class="af-label">Default Topic (optional)</label><input class="af-input" id="jbTopic" placeholder="e.g. Quadratic Equations"></div>'
     +'</div>'
     +'<div class="af-row">'
@@ -5806,7 +5855,7 @@ function renderJambBulkForm(){
       +'<div></div>'
     +'</div>'
     +'<label class="af-label">Paste Questions (single subject, or mix several using tag lines)</label>'
-    +'<textarea class="af-input" id="jbRaw" rows="12" style="resize:vertical;min-height:220px;" placeholder="Subject: Physics\nDifficulty: Easy\nYear: 2019\nTopic: Mechanics\n1. What is the SI unit of force?\nA) Joule\nB) Newton\nC) Watt\nD) Pascal\nAnswer: B\nExplanation: Force is measured in Newtons.\n\nDifficulty: Hard\n2. Next physics-hard question...\n\nSubject: Chemistry\nDifficulty: Easy\n3. First chemistry-easy question..."></textarea>'
+    +'<textarea class="af-input" id="jbRaw" rows="12" style="resize:vertical;min-height:220px;" placeholder="Subject: Physics\nDifficulty: Easy\nYear: 2019\nTopic: Mechanics\n1. What is the SI unit of force?\nA) Joule\nB) Newton\nC) Watt\nD) Pascal\nAnswer: B\nExplanation: Force is measured in Newtons.\n\nDifficulty: Hard\n2. Next physics-hard question...\n\nSubject: English\nType: Synonym\n3. Choose the word closest in meaning to HAPPY\nA) Sad\nB) Joyful\nC) Angry\nD) Tired\nAnswer: B\n\nType: Antonym\n4. Choose the OPPOSITE of HAPPY\nA) Sad\nB) Joyful\nC) Bright\nD) Loud\nAnswer: A"></textarea>'
     +'<button onclick="jambBulkParse()" style="background:var(--gold);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-weight:700;cursor:pointer;width:100%;margin-top:10px;">☁️ Parse & Save to JAMB Bank</button>'
     +'<div id="jbResult" style="margin-top:12px;"></div>'
   +'</div>';
@@ -5839,6 +5888,16 @@ function normalizeDifficulty(text){
   return null;
 }
 
+function matchEnglishTypeKey(text){
+  if(!text)return null;
+  const t=text.toLowerCase().replace(/[^a-z]/g,'');
+  if(ENGLISH_QTYPES[t])return t;
+  const found=Object.entries(ENGLISH_QTYPES).find(([k,v])=>{
+    const name=v.name.toLowerCase().replace(/[^a-z]/g,'');
+    return name===t||name.includes(t)||t.includes(name);
+  });
+  return found?found[0]:null;
+}
 function splitIntoQuestionBlocksWithMeta(text,defaults){
   text=text.trim().replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/^\uFEFF/,'');
   const lines=text.split('\n');
@@ -5874,11 +5933,13 @@ function splitIntoQuestionBlocksWithMeta(text,defaults){
     const mDiff=line.match(/^\s*difficulty\s*[:\-]\s*(.+?)\s*$/i);
     const mYear=line.match(/^\s*year\s*[:\-]\s*(\d{4})/i);
     const mTopic=line.match(/^\s*topic\s*[:\-]\s*(.+?)\s*$/i);
+    const mType=line.match(/^\s*type\s*[:\-]\s*(.+?)\s*$/i);
     const mPassage=line.match(/^\s*passage\s*[:\-]\s*(.+?)\s*$/i);
     if(mSub){const k=matchJambSubjectKey(mSub[1]);if(k)ctx={...ctx,subject:k};passageLineIdx.add(idx);}
     if(mDiff){const d=normalizeDifficulty(mDiff[1]);if(d)ctx={...ctx,difficulty:d};passageLineIdx.add(idx);}
     if(mYear){ctx={...ctx,year:parseInt(mYear[1])};passageLineIdx.add(idx);}
     if(mTopic){ctx={...ctx,topic:mTopic[1].trim()};passageLineIdx.add(idx);}
+    if(mType){const qt=matchEnglishTypeKey(mType[1]);if(qt)ctx={...ctx,qtype:qt};passageLineIdx.add(idx);}
     if(mPassage){
       ctx={...ctx,passageTitle:mPassage[1].trim(),passageText:null};
       capturingPassage=true;
@@ -5931,7 +5992,8 @@ async function jambBulkParse(){
     const diff=p._meta.difficulty||defaultDiff;
     const topic=p._meta.topic||defaultTopic;
     const year=p._meta.year||defaultYear;
-    const tallyKey=subject+' / '+diff;
+    const qType=p._meta.qtype||qtype; // per-question "Type:" tag wins over the dropdown
+    const tallyKey=subject+' / '+diff+' / '+qType;
     tally[tallyKey]=(tally[tallyKey]||0)+1;
 
     // Resolve passage_id if this question falls under an active Passage tag
@@ -5946,7 +6008,7 @@ async function jambBulkParse(){
           if(existing&&existing.length){
             passageId=existing[0].id;
           }else{
-            const passageType=(qtype==='cloze')?'cloze':'comprehension';
+            const passageType=(qType==='cloze')?'cloze':'comprehension';
             const {data:newPassage,error:passErr}=await supa.from('jamb_passages').insert([{subject,type:passageType,title:cacheKey,passage_text:p._meta.passageText}]).select().single();
             if(!passErr&&newPassage){passageId=newPassage.id;passagesCreated++;}
           }
@@ -5958,7 +6020,7 @@ async function jambBulkParse(){
     try{
       const {error}=await supa.from('jamb_questions').insert([{
         subject:subject,
-        question_type:qtype,
+        question_type:qType,
         passage_id:passageId,
         topic:topic,
         year:year,

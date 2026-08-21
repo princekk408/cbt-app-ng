@@ -1,7 +1,7 @@
 // Service worker for offline app-shell caching.
 // Bump CACHE_NAME whenever you deploy a new index.html so returning
 // users get the update instead of a stale cached copy.
-const CACHE_NAME = 'rsu-jamb-cbt-v6';
+const CACHE_NAME = 'rsu-jamb-cbt-v9';
 const SHELL_FILES = [
   './',
   './index.html',
